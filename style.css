@@ -40,6 +40,10 @@ header p, .muted, footer {
   color: var(--muted);
 }
 
+.small-text {
+  font-size: 13px;
+}
+
 .card {
   background: var(--white);
   padding: 24px;
@@ -51,6 +55,10 @@ header p, .muted, footer {
 h2 {
   margin-top: 0;
   font-size: 19px;
+}
+
+h3 {
+  font-size: 16px;
 }
 
 label {
@@ -84,10 +92,49 @@ button {
   cursor: pointer;
 }
 
+button:hover {
+  opacity: .9;
+}
+
 form button {
   width: 100%;
   margin-top: 20px;
 }
+
+.outline-btn {
+  background: white;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Månadsnavigation */
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.month-nav h3 {
+  text-align: center;
+  text-transform: capitalize;
+  margin: 0;
+}
+
+.nav-btn {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Sammanfattning */
 
 .summary {
   display: grid;
@@ -117,15 +164,35 @@ form button {
   background: #e1f3eb;
 }
 
+.negative {
+  color: #c0392b;
+}
+
+/* Budgetkategorier */
+
 .category {
   margin: 24px 0;
 }
 
-.category-top {
+.category-heading {
+  width: 100%;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.category-heading span {
+  font-size: 16px;
   font-weight: 700;
+}
+
+.category-heading strong {
+  white-space: nowrap;
 }
 
 .category small {
@@ -147,6 +214,32 @@ form button {
   border-radius: 20px;
 }
 
+.category-items {
+  background: #f7f9f9;
+  border-radius: 12px;
+  padding: 8px 14px;
+  margin-top: 14px;
+}
+
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #e4e9e9;
+  font-size: 14px;
+}
+
+.category-item:last-child {
+  border-bottom: none;
+}
+
+.category-item strong {
+  white-space: nowrap;
+}
+
+/* Registrerade poster */
+
 .expense {
   display: flex;
   align-items: center;
@@ -167,23 +260,68 @@ form button {
 .expense-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+}
+
+.expense-right > strong {
+  white-space: nowrap;
+}
+
+.edit-btn {
+  background: #e7f3f4;
+  color: #167c80;
+  padding: 8px 10px;
 }
 
 .delete-btn {
   background: #fff0f0;
   color: #b43232;
-  padding: 8px 11px;
-}
-
-.negative {
-  color: #c0392b;
+  padding: 8px 10px;
 }
 
 .empty {
   color: var(--muted);
   text-align: center;
   padding: 20px;
+}
+
+/* Kopiera månad */
+
+dialog {
+  border: none;
+  border-radius: 18px;
+  width: min(92%, 500px);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 0;
+  color: var(--text);
+}
+
+dialog::backdrop {
+  background: #102b35aa;
+}
+
+.dialog-content {
+  padding: 24px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.check-row input {
+  width: auto;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.dialog-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 footer {
@@ -207,5 +345,13 @@ footer {
 
   .card {
     padding: 18px;
+  }
+
+  .expense {
+    flex-wrap: wrap;
+  }
+
+  .expense-right {
+    margin-left: auto;
   }
 }
