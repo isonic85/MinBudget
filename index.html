@@ -3,83 +3,173 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f8">
   <title>MinBudget</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
 <body>
-  <main class="container">
-    <header>
+<main class="container">
+
+  <header>
+    <div>
       <div class="logo">💰 MinBudget</div>
       <p>Din ekonomi. Din kontroll.</p>
-    </header>
+    </div>
+  </header>
 
-    <section class="card">
-      <h2>Min månadsinkomst</h2>
-      <label for="income">Inkomst efter skatt (kr)</label>
-      <input id="income" type="number" min="0"
-             placeholder="Exempel: 30000">
-    </section>
+  <section class="card">
+    <h2>📅 Min månadsbudget</h2>
 
-    <section class="summary">
-      <div class="stat">
-        <span>Inkomst</span>
-        <strong id="totalIncome">0 kr</strong>
-      </div>
-      <div class="stat">
-        <span>Kostnader</span>
-        <strong id="totalExpenses">0 kr</strong>
-      </div>
-      <div class="stat highlight">
-        <span>Kvar efter kostnader</span>
-        <strong id="remaining">0 kr</strong>
-      </div>
-    </section>
+    <div class="month-nav">
+      <button id="prevMonth" class="nav-btn">❮</button>
+      <h3 id="monthTitle"></h3>
+      <button id="nextMonth" class="nav-btn">❯</button>
+    </div>
 
-    <section class="card">
-      <h2>Min 50/30/20-budget</h2>
-      <p class="muted">Din plan jämfört med dina utgifter</p>
-      <div id="categories"></div>
-    </section>
+    <button id="createMonth" class="outline-btn">
+      + Skapa / kopiera månad
+    </button>
+    <p class="muted small-text">
+      Tidigare månader sparas separat.
+    </p>
+  </section>
 
-    <section class="card">
-      <h2>Lägg till en post</h2>
-      <form id="expenseForm">
-        <label for="expenseName">Namn</label>
-        <input id="expenseName" required
-               placeholder="T.ex. Bolån, mat eller sparande">
+  <section class="card">
+    <h2>Min månadsinkomst</h2>
+    <label for="income">Inkomst efter skatt (kr)</label>
+    <input id="income" type="number"
+           min="0" step="0.01"
+           placeholder="Exempel: 30000">
+  </section>
 
-        <label for="expenseAmount">Belopp per månad</label>
-        <input id="expenseAmount" type="number"
-               min="0.01" step="0.01" required
-               placeholder="Belopp i kronor">
+  <section class="summary">
+    <div class="stat">
+      <span>Inkomst</span>
+      <strong id="totalIncome">0 kr</strong>
+    </div>
 
-        <label for="expenseCategory">Budgetkategori</label>
-        <select id="expenseCategory">
-          <option value="behov">50 % – Behov</option>
-          <option value="onskemal">30 % – Önskemål</option>
-          <option value="framtid">20 % – Framtid</option>
-        </select>
+    <div class="stat">
+      <span>Kostnader</span>
+      <strong id="totalExpenses">0 kr</strong>
+    </div>
 
-        <label for="expenseType">Typ av post</label>
-        <select id="expenseType">
-          <option value="fast">Fast kostnad</option>
-          <option value="rorlig">Rörlig kostnad</option>
-          <option value="lan">Lån</option>
-          <option value="sparande">Sparande</option>
-        </select>
+    <div class="stat highlight">
+      <span>Kvar efter kostnader</span>
+      <strong id="remaining">0 kr</strong>
+    </div>
+  </section>
 
-        <button type="submit">+ Lägg till</button>
-      </form>
-    </section>
+  <section class="card">
+    <h2>Min 50/30/20-budget</h2>
+    <p class="muted">
+      Din plan jämfört med dina utgifter
+    </p>
+    <div id="categories"></div>
+  </section>
 
-    <section class="card">
-      <h2>Mina registrerade poster</h2>
-      <div id="expenseList"></div>
-    </section>
+  <section class="card">
+    <h2 id="formTitle">➕ Lägg till en post</h2>
 
-    <footer>MinBudget • Personlig budgetöversikt</footer>
-  </main>
+    <form id="expenseForm">
+      <label for="expenseName">Namn</label>
+      <input id="expenseName" required
+             placeholder="T.ex. Bolån, mat eller sparande">
+
+      <label for="expenseAmount">Belopp per månad</label>
+      <input id="expenseAmount" type="number"
+             min="0.01" step="0.01" required
+             placeholder="Belopp i kronor">
+
+      <label for="expenseCategory">Budgetkategori</label>
+      <select id="expenseCategory">
+        <option value="behov">50 % – Behov</option>
+        <option value="onskemal">30 % – Önskemål</option>
+        <option value="framtid">20 % – Framtid</option>
+      </select>
+
+      <label for="expenseType">Typ av post</label>
+      <select id="expenseType">
+        <option value="fast">Fast kostnad</option>
+        <option value="rorlig">Rörlig kostnad</option>
+        <option value="lan">Lån</option>
+        <option value="sparande">Sparande</option>
+      </select>
+
+      <button id="saveExpense" type="submit">
+        + Lägg till
+      </button>
+
+      <button id="cancelEdit" type="button"
+              class="outline-btn hidden">
+        Avbryt redigering
+      </button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>📋 Månadens registrerade poster</h2>
+    <div id="expenseList"></div>
+  </section>
+
+  <section class="card">
+    <h2>💾 Säkerhetskopiering</h2>
+    <p class="muted">
+      Exportera din budget till en fil som du
+      kan spara på mobilen eller datorn.
+    </p>
+
+    <button id="exportData">
+      Ladda ner säkerhetskopia
+    </button>
+
+    <label for="importFile">
+      Återställ från säkerhetskopia
+    </label>
+    <input id="importFile" type="file"
+           accept=".json,application/json">
+
+    <p class="muted small-text">
+      Import ersätter alla befintliga månader.
+    </p>
+  </section>
+
+  <footer>
+    MinBudget 2.0 • Din personliga ekonomi
+  </footer>
+
+</main>
+
+<dialog id="copyDialog">
+  <div class="dialog-content">
+    <h2>Skapa ny månad</h2>
+    <p class="muted">
+      Välj vilka poster som ska följa med.
+    </p>
+
+    <label for="targetMonth">Ny månad</label>
+    <input id="targetMonth" type="month">
+
+    <label class="check-row">
+      <input id="copyIncome" type="checkbox" checked>
+      Kopiera inkomsten
+    </label>
+
+    <h3>Välj kostnader</h3>
+    <div id="copyList"></div>
+
+    <div class="dialog-actions">
+      <button id="confirmCopy">
+        Skapa månad
+      </button>
+      <button id="cancelCopy" class="outline-btn">
+        Avbryt
+      </button>
+    </div>
+  </div>
+</dialog>
+
 </body>
 </html>
