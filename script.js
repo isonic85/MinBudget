@@ -11,7 +11,7 @@ const categoryInfo = {
     color: "#167c80"
   },
   onskemal: {
-    name: "Önskemål",
+    name: "Tänk efter",
     percent: 30,
     color: "#e88b43"
   },
@@ -37,6 +37,7 @@ const money = value =>
   }).format(value);
 
 const uid = () =>
+  typeof crypto !== "undefined" &&
   typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : Date.now().toString(36) +
@@ -516,14 +517,11 @@ function renderCategories() {
       item => item.category === key
     );
 
-    // Alla poster påverkar hur mycket
-    // som återstår av kategorins budget.
     const total = items.reduce(
       (sum, item) => sum + item.amount,
       0
     );
 
-    // Spenderat = betalda poster.
     const spent = items
       .filter(item => item.paid)
       .reduce(
@@ -533,12 +531,9 @@ function renderCategories() {
 
     const unpaid = total - spent;
 
-    // Riktmärket ändras med lönen.
     const budget =
       period.income * category.percent / 100;
 
-    // Både betalda och obetalda poster
-    // räknas bort från budgetutrymmet.
     const remaining = budget - total;
 
     const percentage = budget > 0
@@ -624,8 +619,13 @@ function renderCategories() {
     );
 
     remainingBox.append(
-      el("small", "Kvar av budgeten"),
-      el("strong", money(remaining))
+      el(
+        "small",
+        remaining < 0
+          ? "Över budgeten"
+          : "Kvar av budgeten"
+      ),
+      el("strong", money(Math.abs(remaining)))
     );
 
     if (remaining < 0) {
@@ -654,6 +654,16 @@ function renderCategories() {
       summary,
       budgetHint
     );
+
+    if (key === "onskemal") {
+      wrapper.append(
+        el(
+          "p",
+          "Behöver jag verkligen köpa det här just nu?",
+          "reflection"
+        )
+      );
+    }
 
     if (expanded[key]) {
       const detail = el(
@@ -763,8 +773,6 @@ function render() {
   renderCategories();
 }
 
-// Lägg till, redigera och ta bort
-
 function closeExpense() {
   editingId = null;
   $("expenseForm").reset();
@@ -857,11 +865,10 @@ $("expenseForm").onsubmit = event => {
 };
 
 $("deleteExpense").onclick = () => {
-  if (!editingId) return;
-
-  if (!confirm(
-    "Vill du ta bort kostnaden?"
-  )) {
+  if (
+    !editingId ||
+    !confirm("Vill du ta bort kostnaden?")
+  ) {
     return;
   }
 
@@ -874,8 +881,6 @@ $("deleteExpense").onclick = () => {
   closeExpense();
   render();
 };
-
-// Bläddra mellan löneperioder
 
 function navigate(direction) {
   const index = data.periods.findIndex(
@@ -896,8 +901,6 @@ $("prevPeriod").onclick = () =>
 
 $("nextPeriod").onclick = () =>
   navigate(1);
-
-// Inställningar
 
 for (let day = 1; day <= 31; day++) {
   const option = el(
@@ -1033,8 +1036,6 @@ $("deletePeriod").onclick = () => {
   render();
 };
 
-// Ny löneperiod
-
 function suggestNewDates(start) {
   if (!parseDate(start)) return;
 
@@ -1166,8 +1167,6 @@ $("confirmPeriod").onclick = () => {
   $("periodDialog").close();
   render();
 };
-
-// Säkerhetskopiering
 
 $("exportBtn").onclick = () => {
   const blob = new Blob(
