@@ -3,10 +3,9 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f7f8">
-  <title>MinBudget</title>
+  <title>MinBudget 3.0</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
@@ -14,35 +13,51 @@
 <main class="container">
 
   <header>
-    <div>
-      <div class="logo">💰 MinBudget</div>
-      <p>Din ekonomi. Din kontroll.</p>
-    </div>
+    <div class="logo">💰 MinBudget</div>
+    <p class="muted">Din ekonomi. Din kontroll.</p>
   </header>
 
   <section class="card">
-    <h2>📅 Min månadsbudget</h2>
+    <h2>📅 Min löneperiod</h2>
 
     <div class="month-nav">
-      <button id="prevMonth" class="nav-btn">❮</button>
-      <h3 id="monthTitle"></h3>
-      <button id="nextMonth" class="nav-btn">❯</button>
+      <button id="prevPeriod" class="nav-btn">❮</button>
+      <div class="period-title">
+        <h3 id="periodTitle"></h3>
+        <small id="periodDates"></small>
+      </div>
+      <button id="nextPeriod" class="nav-btn">❯</button>
     </div>
 
-    <button id="createMonth" class="outline-btn">
-      + Skapa / kopiera månad
+    <label for="payday">Min vanliga lönedag</label>
+    <select id="payday"></select>
+
+    <div class="date-grid">
+      <div>
+        <label for="periodStart">Från datum</label>
+        <input id="periodStart" type="date">
+      </div>
+      <div>
+        <label for="periodEnd">Till datum</label>
+        <input id="periodEnd" type="date">
+      </div>
+    </div>
+
+    <button id="saveDates" class="outline-btn">
+      Spara periodens datum
     </button>
-    <p class="muted small-text">
-      Tidigare månader sparas separat.
-    </p>
+
+    <button id="createPeriod">
+      + Skapa nästa löneperiod
+    </button>
   </section>
 
   <section class="card">
-    <h2>Min månadsinkomst</h2>
-    <label for="income">Inkomst efter skatt (kr)</label>
+    <h2>💵 Min inkomst</h2>
+    <label for="income">Lön efter skatt (kr)</label>
     <input id="income" type="number"
            min="0" step="0.01"
-           placeholder="Exempel: 30000">
+           placeholder="Ange din lön">
   </section>
 
   <section class="summary">
@@ -50,47 +65,67 @@
       <span>Inkomst</span>
       <strong id="totalIncome">0 kr</strong>
     </div>
-
     <div class="stat">
-      <span>Kostnader</span>
+      <span>Planerade kostnader</span>
       <strong id="totalExpenses">0 kr</strong>
     </div>
-
     <div class="stat highlight">
-      <span>Kvar efter kostnader</span>
-      <strong id="remaining">0 kr</strong>
+      <span>Fritt att använda</span>
+      <strong id="available">0 kr</strong>
     </div>
   </section>
 
   <section class="card">
-    <h2>Min 50/30/20-budget</h2>
+    <h2>📊 Pengakollen</h2>
+
+    <div class="money-row">
+      <span>Betalda kostnader</span>
+      <strong id="paidTotal">0 kr</strong>
+    </div>
+    <div class="money-row">
+      <span>Reserverat för obetalda poster</span>
+      <strong id="unpaidTotal">0 kr</strong>
+    </div>
+    <div class="money-row">
+      <span>Beräknat kvar efter betalningar</span>
+      <strong id="balanceAfterPaid">0 kr</strong>
+    </div>
+
+    <p class="muted small">
+      Fritt att använda = inkomst minus alla
+      registrerade kostnader och sparbelopp.
+      En betalning dras inte av två gånger.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>🎯 Min 50/30/20-budget</h2>
     <p class="muted">
-      Din plan jämfört med dina utgifter
+      Tryck på en kategori för att se posterna.
     </p>
     <div id="categories"></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="entrySection">
     <h2 id="formTitle">➕ Lägg till en post</h2>
 
     <form id="expenseForm">
       <label for="expenseName">Namn</label>
       <input id="expenseName" required
-             placeholder="T.ex. Bolån, mat eller sparande">
+             placeholder="T.ex. Bolån eller mat">
 
-      <label for="expenseAmount">Belopp per månad</label>
+      <label for="expenseAmount">Belopp (kr)</label>
       <input id="expenseAmount" type="number"
-             min="0.01" step="0.01" required
-             placeholder="Belopp i kronor">
+             min="0.01" step="0.01" required>
 
-      <label for="expenseCategory">Budgetkategori</label>
+      <label for="expenseCategory">Kategori</label>
       <select id="expenseCategory">
         <option value="behov">50 % – Behov</option>
         <option value="onskemal">30 % – Önskemål</option>
         <option value="framtid">20 % – Framtid</option>
       </select>
 
-      <label for="expenseType">Typ av post</label>
+      <label for="expenseType">Typ</label>
       <select id="expenseType">
         <option value="fast">Fast kostnad</option>
         <option value="rorlig">Rörlig kostnad</option>
@@ -98,10 +133,17 @@
         <option value="sparande">Sparande</option>
       </select>
 
+      <label for="expenseDue">Betalningsdatum (valfritt)</label>
+      <input id="expenseDue" type="date">
+
+      <label class="check-row">
+        <input id="expensePaid" type="checkbox">
+        Redan betald / överförd
+      </label>
+
       <button id="saveExpense" type="submit">
         + Lägg till
       </button>
-
       <button id="cancelEdit" type="button"
               class="outline-btn hidden">
         Avbryt redigering
@@ -110,17 +152,15 @@
   </section>
 
   <section class="card">
-    <h2>📋 Månadens registrerade poster</h2>
+    <h2>📋 Alla poster denna löneperiod</h2>
     <div id="expenseList"></div>
   </section>
 
   <section class="card">
     <h2>💾 Säkerhetskopiering</h2>
     <p class="muted">
-      Exportera din budget till en fil som du
-      kan spara på mobilen eller datorn.
+      Spara en kopia av din ekonomi som en fil.
     </p>
-
     <button id="exportData">
       Ladda ner säkerhetskopia
     </button>
@@ -130,46 +170,37 @@
     </label>
     <input id="importFile" type="file"
            accept=".json,application/json">
-
-    <p class="muted small-text">
-      Import ersätter alla befintliga månader.
+    <p class="muted small">
+      Import ersätter nuvarande uppgifter.
     </p>
   </section>
 
-  <footer>
-    MinBudget 2.0 • Din personliga ekonomi
-  </footer>
-
+  <footer>MinBudget 3.0 • Personlig ekonomi</footer>
 </main>
 
 <dialog id="copyDialog">
   <div class="dialog-content">
-    <h2>Skapa ny månad</h2>
+    <h2>Skapa nästa löneperiod</h2>
     <p class="muted">
-      Välj vilka poster som ska följa med.
+      Välj vilka poster som ska kopieras.
     </p>
 
-    <label for="targetMonth">Ny månad</label>
-    <input id="targetMonth" type="month">
+    <label for="newStart">Nästa lönedatum</label>
+    <input id="newStart" type="date">
 
     <label class="check-row">
       <input id="copyIncome" type="checkbox" checked>
       Kopiera inkomsten
     </label>
 
-    <h3>Välj kostnader</h3>
+    <h3>Kopiera poster</h3>
     <div id="copyList"></div>
 
-    <div class="dialog-actions">
-      <button id="confirmCopy">
-        Skapa månad
-      </button>
-      <button id="cancelCopy" class="outline-btn">
-        Avbryt
-      </button>
-    </div>
+    <button id="confirmCopy">Skapa perioden</button>
+    <button id="cancelCopy" class="outline-btn">
+      Avbryt
+    </button>
   </div>
 </dialog>
-
 </body>
 </html>
