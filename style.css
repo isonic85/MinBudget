@@ -1,7 +1,7 @@
 
 :root {
   --bg: #f4f7f8;
-  --white: #ffffff;
+  --white: #fff;
   --text: #172b36;
   --muted: #72818a;
   --primary: #167c80;
@@ -10,9 +10,7 @@
   --framtid: #3e956a;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -27,22 +25,10 @@ body {
   padding: 20px;
 }
 
-header {
-  padding: 25px 0;
-}
-
-.logo {
-  font-size: 28px;
-  font-weight: 800;
-}
-
-header p, .muted, footer {
-  color: var(--muted);
-}
-
-.small-text {
-  font-size: 13px;
-}
+header { padding: 22px 0; }
+.logo { font-size: 28px; font-weight: 800; }
+.muted, footer { color: var(--muted); }
+.small { font-size: 13px; line-height: 1.6; }
 
 .card {
   background: var(--white);
@@ -52,14 +38,8 @@ header p, .muted, footer {
   box-shadow: 0 4px 18px #182d3510;
 }
 
-h2 {
-  margin-top: 0;
-  font-size: 19px;
-}
-
-h3 {
-  font-size: 16px;
-}
+h2 { margin-top: 0; font-size: 19px; }
+h3 { font-size: 16px; }
 
 label {
   display: block;
@@ -92,14 +72,8 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  opacity: .9;
-}
-
-form button {
-  width: 100%;
-  margin-top: 20px;
-}
+button:hover { opacity: .9; }
+button:disabled { opacity: .5; cursor: default; }
 
 .outline-btn {
   background: white;
@@ -107,11 +81,14 @@ form button {
   border: 1px solid var(--primary);
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
 
-/* Månadsnavigation */
+.card > button,
+form > button,
+.dialog-content > button {
+  width: 100%;
+  margin-top: 12px;
+}
 
 .month-nav {
   display: flex;
@@ -121,11 +98,9 @@ form button {
   margin: 20px 0;
 }
 
-.month-nav h3 {
-  text-align: center;
-  text-transform: capitalize;
-  margin: 0;
-}
+.period-title { text-align: center; }
+.period-title h3 { margin: 0 0 5px; }
+.period-title small { color: var(--muted); }
 
 .nav-btn {
   width: 46px;
@@ -134,7 +109,11 @@ form button {
   flex-shrink: 0;
 }
 
-/* Sammanfattning */
+.date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
 
 .summary {
   display: grid;
@@ -157,22 +136,24 @@ form button {
 }
 
 .stat strong {
-  font-size: 21px;
+  font-size: 20px;
+  overflow-wrap: anywhere;
 }
 
-.highlight {
-  background: #e1f3eb;
+.highlight { background: #e1f3eb; }
+.negative { color: #c0392b !important; }
+
+.money-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 13px 0;
+  border-bottom: 1px solid #edf0f1;
 }
 
-.negative {
-  color: #c0392b;
-}
+.money-row strong { white-space: nowrap; }
 
-/* Budgetkategorier */
-
-.category {
-  margin: 24px 0;
-}
+.category { margin: 24px 0; }
 
 .category-heading {
   width: 100%;
@@ -191,9 +172,7 @@ form button {
   font-weight: 700;
 }
 
-.category-heading strong {
-  white-space: nowrap;
-}
+.category-heading strong { white-space: nowrap; }
 
 .category small {
   display: block;
@@ -230,46 +209,35 @@ form button {
   font-size: 14px;
 }
 
-.category-item:last-child {
-  border-bottom: none;
-}
-
-.category-item strong {
-  white-space: nowrap;
-}
-
-/* Registrerade poster */
+.category-item:last-child { border-bottom: none; }
+.category-item strong { white-space: nowrap; }
 
 .expense {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
   border-bottom: 1px solid #edf0f1;
   padding: 15px 0;
 }
 
-.expense strong {
-  display: block;
-}
+.expense-info { min-width: 0; }
+.expense-info strong { display: block; }
+.expense-info small { color: var(--muted); }
 
-.expense small {
-  color: var(--muted);
-}
-
-.expense-right {
+.expense-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
 }
 
-.expense-right > strong {
-  white-space: nowrap;
-}
+.expense-actions > strong { white-space: nowrap; }
 
 .edit-btn {
   background: #e7f3f4;
-  color: #167c80;
+  color: var(--primary);
   padding: 8px 10px;
 }
 
@@ -279,30 +247,16 @@ form button {
   padding: 8px 10px;
 }
 
-.empty {
-  color: var(--muted);
-  text-align: center;
-  padding: 20px;
+.paid-btn {
+  background: #e8f5ec;
+  color: #287c4b;
+  padding: 8px 10px;
 }
 
-/* Kopiera månad */
-
-dialog {
-  border: none;
-  border-radius: 18px;
-  width: min(92%, 500px);
-  max-height: 85vh;
-  overflow-y: auto;
-  padding: 0;
-  color: var(--text);
-}
-
-dialog::backdrop {
-  background: #102b35aa;
-}
-
-.dialog-content {
-  padding: 24px;
+.unpaid-btn {
+  background: #fff3e4;
+  color: #a76a24;
+  padding: 8px 10px;
 }
 
 .check-row {
@@ -318,11 +272,24 @@ dialog::backdrop {
   flex-shrink: 0;
 }
 
-.dialog-actions {
-  display: grid;
-  gap: 10px;
-  margin-top: 20px;
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 20px;
 }
+
+dialog {
+  border: none;
+  border-radius: 18px;
+  width: min(92%, 500px);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 0;
+  color: var(--text);
+}
+
+dialog::backdrop { background: #102b35aa; }
+.dialog-content { padding: 24px; }
 
 footer {
   text-align: center;
@@ -331,27 +298,11 @@ footer {
 }
 
 @media (max-width: 600px) {
-  .summary {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .highlight {
-    grid-column: span 2;
-  }
-
-  .stat strong {
-    font-size: 19px;
-  }
-
-  .card {
-    padding: 18px;
-  }
-
-  .expense {
-    flex-wrap: wrap;
-  }
-
-  .expense-right {
-    margin-left: auto;
-  }
+  .summary { grid-template-columns: 1fr 1fr; }
+  .highlight { grid-column: span 2; }
+  .stat strong { font-size: 18px; }
+  .card { padding: 18px; }
+  .expense { flex-wrap: wrap; }
+  .expense-actions { margin-left: auto; }
+  .date-grid { grid-template-columns: 1fr; }
 }
