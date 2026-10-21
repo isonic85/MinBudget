@@ -281,6 +281,17 @@ body {
   margin: 9px 0 0;
 }
 
+.reflection {
+  margin: 12px 0 0;
+  padding: 11px 13px;
+  background: #fff6ec;
+  border-left: 3px solid var(--orange);
+  border-radius: 9px;
+  color: #72513b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .category-detail {
   background: #f7f9f9;
   border-radius: 12px;
