@@ -5,202 +5,198 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f7f8">
-  <title>MinBudget 3.0</title>
+  <title>MinBudget</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
 <body>
-<main class="container">
+<main class="app">
 
-  <header>
-    <div class="logo">💰 MinBudget</div>
-    <p class="muted">Din ekonomi. Din kontroll.</p>
+  <header class="header">
+    <div>
+      <h1>💰 MinBudget</h1>
+      <p>Din ekonomi, enkelt.</p>
+    </div>
+    <button id="settingsBtn" class="icon-btn"
+      aria-label="Inställningar">⚙️</button>
   </header>
 
-  <section class="card">
-    <h2>📅 Min löneperiod</h2>
-
-    <div class="month-nav">
-      <button id="prevPeriod" class="nav-btn">❮</button>
-      <div class="period-title">
-        <h3 id="periodTitle"></h3>
-        <small id="periodDates"></small>
-      </div>
-      <button id="nextPeriod" class="nav-btn">❯</button>
-    </div>
-
-    <label for="payday">Min vanliga lönedag</label>
-    <select id="payday"></select>
-
-    <div class="date-grid">
+  <section class="card overview">
+    <div class="period-nav">
+      <button id="prevPeriod" class="arrow-btn"
+        aria-label="Föregående period">‹</button>
       <div>
-        <label for="periodStart">Från datum</label>
-        <input id="periodStart" type="date">
+        <h2 id="periodName"></h2>
+        <p id="periodDates"></p>
+      </div>
+      <button id="nextPeriod" class="arrow-btn"
+        aria-label="Nästa period">›</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <p class="eyebrow">Kvar att använda</p>
+    <div id="available" class="big-amount">0 kr</div>
+    <p class="hint">
+      Efter alla planerade kostnader och sparande
+    </p>
+
+    <div class="payment-summary">
+      <div>
+        <span>Redan betalt</span>
+        <strong id="paidTotal">0 kr</strong>
       </div>
       <div>
-        <label for="periodEnd">Till datum</label>
-        <input id="periodEnd" type="date">
+        <span>Kvar att betala</span>
+        <strong id="unpaidTotal">0 kr</strong>
       </div>
     </div>
-
-    <button id="saveDates" class="outline-btn">
-      Spara periodens datum
-    </button>
-
-    <button id="createPeriod">
-      + Skapa nästa löneperiod
-    </button>
   </section>
 
   <section class="card">
-    <h2>💵 Min inkomst</h2>
-    <label for="income">Lön efter skatt (kr)</label>
-    <input id="income" type="number"
-           min="0" step="0.01"
-           placeholder="Ange din lön">
-  </section>
-
-  <section class="summary">
-    <div class="stat">
-      <span>Inkomst</span>
-      <strong id="totalIncome">0 kr</strong>
+    <div class="section-heading">
+      <h2>Mina pengar</h2>
+      <span>50 / 30 / 20</span>
     </div>
-    <div class="stat">
-      <span>Planerade kostnader</span>
-      <strong id="totalExpenses">0 kr</strong>
-    </div>
-    <div class="stat highlight">
-      <span>Fritt att använda</span>
-      <strong id="available">0 kr</strong>
-    </div>
-  </section>
-
-  <section class="card">
-    <h2>📊 Pengakollen</h2>
-
-    <div class="money-row">
-      <span>Betalda kostnader</span>
-      <strong id="paidTotal">0 kr</strong>
-    </div>
-    <div class="money-row">
-      <span>Reserverat för obetalda poster</span>
-      <strong id="unpaidTotal">0 kr</strong>
-    </div>
-    <div class="money-row">
-      <span>Beräknat kvar efter betalningar</span>
-      <strong id="balanceAfterPaid">0 kr</strong>
-    </div>
-
-    <p class="muted small">
-      Fritt att använda = inkomst minus alla
-      registrerade kostnader och sparbelopp.
-      En betalning dras inte av två gånger.
-    </p>
-  </section>
-
-  <section class="card">
-    <h2>🎯 Min 50/30/20-budget</h2>
-    <p class="muted">
-      Tryck på en kategori för att se posterna.
-    </p>
     <div id="categories"></div>
   </section>
 
-  <section class="card" id="entrySection">
-    <h2 id="formTitle">➕ Lägg till en post</h2>
+  <button id="addBtn" class="primary-btn">
+    + Lägg till kostnad
+  </button>
 
-    <form id="expenseForm">
-      <label for="expenseName">Namn</label>
-      <input id="expenseName" required
-             placeholder="T.ex. Bolån eller mat">
+  <button id="newPeriodBtn" class="secondary-btn">
+    + Ny löneperiod
+  </button>
 
-      <label for="expenseAmount">Belopp (kr)</label>
-      <input id="expenseAmount" type="number"
-             min="0.01" step="0.01" required>
+  <footer>MinBudget 4.0</footer>
+</main>
 
-      <label for="expenseCategory">Kategori</label>
-      <select id="expenseCategory">
-        <option value="behov">50 % – Behov</option>
-        <option value="onskemal">30 % – Önskemål</option>
-        <option value="framtid">20 % – Framtid</option>
-      </select>
+<!-- Lägg till / redigera -->
+<dialog id="expenseDialog">
+  <form id="expenseForm" class="dialog-body">
+    <h2 id="expenseDialogTitle">Lägg till kostnad</h2>
 
-      <label for="expenseType">Typ</label>
-      <select id="expenseType">
-        <option value="fast">Fast kostnad</option>
-        <option value="rorlig">Rörlig kostnad</option>
-        <option value="lan">Lån</option>
-        <option value="sparande">Sparande</option>
-      </select>
+    <label for="expenseName">Vad gäller det?</label>
+    <input id="expenseName" required
+      placeholder="T.ex. Hyra, mat eller sparande">
 
-      <label for="expenseDue">Betalningsdatum (valfritt)</label>
-      <input id="expenseDue" type="date">
+    <label for="expenseAmount">Belopp (kr)</label>
+    <input id="expenseAmount" type="number"
+      min="0.01" step="0.01" required>
 
-      <label class="check-row">
-        <input id="expensePaid" type="checkbox">
-        Redan betald / överförd
-      </label>
+    <label for="expenseCategory">Kategori</label>
+    <select id="expenseCategory">
+      <option value="behov">Behov – 50 %</option>
+      <option value="onskemal">Önskemål – 30 %</option>
+      <option value="framtid">Framtid – 20 %</option>
+    </select>
 
-      <button id="saveExpense" type="submit">
-        + Lägg till
-      </button>
-      <button id="cancelEdit" type="button"
-              class="outline-btn hidden">
-        Avbryt redigering
-      </button>
-    </form>
-  </section>
+    <label for="expenseType">Typ</label>
+    <select id="expenseType">
+      <option value="fast">Fast kostnad</option>
+      <option value="rorlig">Rörlig kostnad</option>
+      <option value="lan">Lån</option>
+      <option value="sparande">Sparande</option>
+    </select>
 
-  <section class="card">
-    <h2>📋 Alla poster denna löneperiod</h2>
-    <div id="expenseList"></div>
-  </section>
+    <label for="expenseDue">Betalningsdatum (valfritt)</label>
+    <input id="expenseDue" type="date">
 
-  <section class="card">
-    <h2>💾 Säkerhetskopiering</h2>
-    <p class="muted">
-      Spara en kopia av din ekonomi som en fil.
+    <label class="check-row">
+      <input id="expensePaid" type="checkbox">
+      Redan betald / överförd
+    </label>
+
+    <button type="submit" class="primary-btn">
+      Spara
+    </button>
+    <button type="button" id="cancelExpense"
+      class="secondary-btn">Avbryt</button>
+    <button type="button" id="deleteExpense"
+      class="danger-btn hidden">Ta bort posten</button>
+  </form>
+</dialog>
+
+<!-- Inställningar -->
+<dialog id="settingsDialog">
+  <div class="dialog-body">
+    <h2>⚙️ Inställningar</h2>
+
+    <label for="income">Lön efter skatt (kr)</label>
+    <input id="income" type="number"
+      min="0" step="0.01">
+
+    <label for="payday">Vanlig lönedag</label>
+    <select id="payday"></select>
+    <p class="hint">
+      Gäller nya perioder. Ändrar inte gamla.
     </p>
-    <button id="exportData">
+
+    <h3>Den valda löneperioden</h3>
+
+    <label for="periodStart">Startdatum</label>
+    <input id="periodStart" type="date">
+
+    <label for="periodEnd">Slutdatum</label>
+    <input id="periodEnd" type="date">
+
+    <button id="saveSettings" class="primary-btn">
+      Spara inställningar
+    </button>
+
+    <button id="deletePeriod" class="danger-btn">
+      Ta bort vald löneperiod
+    </button>
+
+    <h3>Säkerhetskopiering</h3>
+    <button id="exportBtn" class="secondary-btn">
       Ladda ner säkerhetskopia
     </button>
 
-    <label for="importFile">
-      Återställ från säkerhetskopia
-    </label>
+    <label for="importFile">Återställ säkerhetskopia</label>
     <input id="importFile" type="file"
-           accept=".json,application/json">
-    <p class="muted small">
-      Import ersätter nuvarande uppgifter.
+      accept=".json,application/json">
+    <p class="hint">
+      Import ersätter dina nuvarande uppgifter.
     </p>
-  </section>
 
-  <footer>MinBudget 3.0 • Personlig ekonomi</footer>
-</main>
+    <button id="closeSettings" class="secondary-btn">
+      Stäng
+    </button>
+  </div>
+</dialog>
 
-<dialog id="copyDialog">
-  <div class="dialog-content">
-    <h2>Skapa nästa löneperiod</h2>
-    <p class="muted">
-      Välj vilka poster som ska kopieras.
+<!-- Ny löneperiod -->
+<dialog id="periodDialog">
+  <div class="dialog-body">
+    <h2>Ny löneperiod</h2>
+    <p class="hint">
+      Välj vilka kostnader som ska följa med.
     </p>
 
     <label for="newStart">Nästa lönedatum</label>
     <input id="newStart" type="date">
 
+    <label for="newEnd">Periodens sista dag</label>
+    <input id="newEnd" type="date">
+
     <label class="check-row">
       <input id="copyIncome" type="checkbox" checked>
-      Kopiera inkomsten
+      Kopiera lönebeloppet
     </label>
 
-    <h3>Kopiera poster</h3>
+    <h3>Kopiera kostnader</h3>
     <div id="copyList"></div>
 
-    <button id="confirmCopy">Skapa perioden</button>
-    <button id="cancelCopy" class="outline-btn">
+    <button id="confirmPeriod" class="primary-btn">
+      Skapa löneperiod
+    </button>
+    <button id="cancelPeriod" class="secondary-btn">
       Avbryt
     </button>
   </div>
 </dialog>
+
 </body>
 </html>
