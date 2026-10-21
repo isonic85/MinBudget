@@ -1,178 +1,264 @@
 
-const STORAGE_KEY = "minbudget_v2";
-const OLD_STORAGE_KEY = "minbudget_v1";
+"use strict";
+
+const KEY = "minbudget_v3";
+const OLD_V2 = "minbudget_v2";
+const OLD_V1 = "minbudget_v1";
+
+const $ = id => document.getElementById(id);
 
 const categories = {
-  behov: {
-    name: "Behov",
-    percent: 50,
-    color: "#167c80"
-  },
-  onskemal: {
-    name: "Önskemål",
-    percent: 30,
-    color: "#e88b43"
-  },
-  framtid: {
-    name: "Framtid",
-    percent: 20,
-    color: "#3e956a"
-  }
+  behov: { name: "Behov", percent: 50, color: "#167c80" },
+  onskemal: { name: "Önskemål", percent: 30, color: "#e88b43" },
+  framtid: { name: "Framtid", percent: 20, color: "#3e956a" }
 };
 
-const typeNames = {
+const types = {
   fast: "Fast kostnad",
   rorlig: "Rörlig kostnad",
   lan: "Lån",
   sparande: "Sparande"
 };
 
-const $ = id => document.getElementById(id);
-
-const money = amount => new Intl.NumberFormat("sv-SE", {
+const money = n => new Intl.NumberFormat("sv-SE", {
   style: "currency",
-  currency: "SEK",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-}).format(amount);
+  currency: "SEK"
+}).format(n);
 
-function currentMonth() {
+const uid = () => crypto.randomUUID();
+
+function today() {
   const d = new Date();
+  return dateString(d);
+}
+
+function dateString(d) {
   return d.getFullYear() + "-" +
-    String(d.getMonth() + 1).padStart(2, "0");
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
 }
 
-function validMonth(value) {
-  return typeof value === "string" &&
-    /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+function parseDate(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s || "")) {
+    return null;
+  }
+  const d = new Date(s + "T12:00:00");
+  return !Number.isNaN(d.getTime()) &&
+    dateString(d) === s ? d : null;
 }
 
-function shiftMonth(month, offset) {
-  const [year, number] = month.split("-").map(Number);
-  const date = new Date(year, number - 1 + offset, 1);
-
-  return date.getFullYear() + "-" +
-    String(date.getMonth() + 1).padStart(2, "0");
+function addDays(s, days) {
+  const d = parseDate(s);
+  d.setDate(d.getDate() + days);
+  return dateString(d);
 }
 
-function monthLabel(month) {
-  const [year, number] = month.split("-").map(Number);
-
-  const label = new Intl.DateTimeFormat("sv-SE", {
-    month: "long",
-    year: "numeric"
-  }).format(new Date(year, number - 1, 1));
-
-  return label.charAt(0).toUpperCase() + label.slice(1);
+function paydayDate(year, month, day) {
+  const last = new Date(year, month, 0).getDate();
+  return dateString(
+    new Date(year, month - 1, Math.min(day, last))
+  );
 }
 
-function normalizeExpense(item) {
+function nextPayday(start, day) {
+  const d = parseDate(start);
+  return paydayDate(
+    d.getMonth() === 11
+      ? d.getFullYear() + 1 : d.getFullYear(),
+    d.getMonth() === 11 ? 1 : d.getMonth() + 2,
+    day
+  );
+}
+
+function periodForDate(date, day) {
+  const d = parseDate(date);
+  let start = paydayDate(
+    d.getFullYear(), d.getMonth() + 1, day
+  );
+
+  if (start > date) {
+    const previous = new Date(
+      d.getFullYear(), d.getMonth() - 1, 1
+    );
+    start = paydayDate(
+      previous.getFullYear(),
+      previous.getMonth() + 1,
+      day
+    );
+  }
+
   return {
-    id: String(item.id || crypto.randomUUID()),
-    name: String(item.name || "Namnlös post"),
-    amount: Number(item.amount),
-    category: categories[item.category]
-      ? item.category : "behov",
-    type: typeNames[item.type]
-      ? item.type : "rorlig"
+    start,
+    end: addDays(nextPayday(start, day), -1)
   };
 }
 
-function validateDatabase(value) {
-  if (!value || typeof value !== "object" ||
-      !value.months || typeof value.months !== "object" ||
-      Array.isArray(value.months)) {
-    throw new Error("Ogiltig säkerhetskopia.");
+function cleanEntry(e) {
+  return {
+    id: String(e.id || uid()),
+    name: String(e.name || "").trim(),
+    amount: Number(e.amount),
+    category: e.category,
+    type: e.type,
+    paid: e.paid === true,
+    due: e.due || ""
+  };
+}
+
+function validate(raw) {
+  if (!raw || !Array.isArray(raw.periods) ||
+      !Number.isInteger(raw.payday) ||
+      raw.payday < 1 || raw.payday > 31) {
+    throw new Error("Ogiltigt dataformat");
   }
 
-  const months = {};
+  const ids = new Set();
 
-  for (const [key, month] of Object.entries(value.months)) {
-    if (!validMonth(key) ||
-        !month || !Array.isArray(month.expenses) ||
-        !Number.isFinite(Number(month.income)) ||
-        Number(month.income) < 0) {
-      throw new Error("Ogiltiga månadsuppgifter.");
+  const periods = raw.periods.map(p => {
+    if (!p || !parseDate(p.start) ||
+        !parseDate(p.end) ||
+        p.end < p.start ||
+        !Array.isArray(p.expenses) ||
+        !Number.isFinite(Number(p.income)) ||
+        Number(p.income) < 0) {
+      throw new Error("Ogiltig löneperiod");
     }
 
-    const expenses = month.expenses.map(item => {
-      if (!item || typeof item.name !== "string" ||
-          !item.name.trim() ||
-          !Number.isFinite(Number(item.amount)) ||
-          Number(item.amount) <= 0 ||
-          !categories[item.category] ||
-          !typeNames[item.type]) {
-        throw new Error("Ogiltig kostnad i säkerhetskopian.");
-      }
+    const id = String(p.id || uid());
+    if (ids.has(id)) throw new Error("Dubbla period-ID");
+    ids.add(id);
 
-      return normalizeExpense(item);
+    const expenses = p.expenses.map(e => {
+      const item = cleanEntry(e);
+      if (!item.name ||
+          !Number.isFinite(item.amount) ||
+          item.amount <= 0 ||
+          !categories[item.category] ||
+          !types[item.type] ||
+          (item.due && !parseDate(item.due))) {
+        throw new Error("Ogiltig kostnad");
+      }
+      return item;
     });
 
-    months[key] = {
-      income: Number(month.income),
+    return {
+      id,
+      start: p.start,
+      end: p.end,
+      income: Number(p.income),
       expenses
     };
+  });
+
+  periods.sort((a, b) => a.start.localeCompare(b.start));
+
+  for (let i = 1; i < periods.length; i++) {
+    if (periods[i].start <= periods[i - 1].end) {
+      throw new Error("Löneperioder överlappar");
+    }
   }
 
-  return { months };
+  return { payday: raw.payday, periods };
 }
 
-function loadData() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+function migrate() {
+  const result = { payday: 20, periods: [] };
+  const raw2 = localStorage.getItem(OLD_V2);
 
-    if (saved) {
-      return validateDatabase(JSON.parse(saved));
+  if (raw2) {
+    const old = JSON.parse(raw2);
+    if (!old.months || typeof old.months !== "object") {
+      throw new Error("Kan inte läsa version 2");
     }
-  } catch (error) {
-    console.error("Kunde inte läsa version 2:", error);
-    alert("Sparade uppgifter kunde inte läsas. " +
-          "Ingenting har skrivits över.");
-    throw error;
-  }
 
-  // Migrera tidigare MinBudget version 1.
-  const old = localStorage.getItem(OLD_STORAGE_KEY);
-
-  if (old) {
-    try {
-      const parsed = JSON.parse(old);
-
-      if (!Array.isArray(parsed.expenses)) {
-        throw new Error("Ogiltigt äldre format");
+    // Gamla kalendermånader bevaras som egna
+    // historiska perioder utan att ändra beloppen.
+    for (const [month, m] of Object.entries(old.months)) {
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+        throw new Error("Ogiltig gammal månad");
       }
 
-      const migrated = {
-        months: {
-          [currentMonth()]: {
-            income: Number(parsed.income) || 0,
-            expenses: parsed.expenses.map(normalizeExpense)
-          }
-        }
-      };
-
-      const checked = validateDatabase(migrated);
-
-      // Gamla uppgifter lämnas orörda.
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(checked)
-      );
-
-      return checked;
-    } catch (error) {
-      console.error("Migrering misslyckades:", error);
-      alert("Kunde inte föra över gamla uppgifter. " +
-            "De gamla uppgifterna har inte raderats.");
-      throw error;
+      const [y, n] = month.split("-").map(Number);
+      result.periods.push({
+        id: uid(),
+        start: month + "-01",
+        end: dateString(new Date(y, n, 0)),
+        income: Number(m.income) || 0,
+        expenses: (m.expenses || []).map(e => ({
+          ...e,
+          paid: false,
+          due: ""
+        }))
+      });
     }
+    return validate(result);
   }
 
-  return { months: {} };
+  const raw1 = localStorage.getItem(OLD_V1);
+  if (raw1) {
+    const old = JSON.parse(raw1);
+    if (!Array.isArray(old.expenses)) {
+      throw new Error("Kan inte läsa version 1");
+    }
+
+    const dates = periodForDate(today(), 20);
+    result.periods.push({
+      id: uid(),
+      ...dates,
+      income: Number(old.income) || 0,
+      expenses: old.expenses.map(e => ({
+        ...e,
+        paid: false,
+        due: ""
+      }))
+    });
+  }
+
+  return validate(result);
 }
 
-let data = loadData();
-let selectedMonth = currentMonth();
+function load() {
+  const saved = localStorage.getItem(KEY);
+  return saved ? validate(JSON.parse(saved)) : migrate();
+}
+
+let data;
+
+try {
+  data = load();
+} catch (error) {
+  alert(
+    "Kunde inte läsa tidigare uppgifter. " +
+    "Ingen data har skrivits över. " +
+    "Kontrollera säkerhetskopian."
+  );
+  throw error;
+}
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function createInitialPeriod() {
+  if (data.periods.length) return;
+
+  const dates = periodForDate(today(), data.payday);
+  data.periods.push({
+    id: uid(),
+    ...dates,
+    income: 0,
+    expenses: []
+  });
+  save();
+}
+
+createInitialPeriod();
+
+let selectedId =
+  data.periods.find(p =>
+    p.start <= today() && p.end >= today()
+  )?.id || data.periods[data.periods.length - 1].id;
+
 let editingId = null;
 
 const expanded = {
@@ -181,147 +267,146 @@ const expanded = {
   framtid: true
 };
 
-function saveData() {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(data)
-    );
-  } catch (error) {
-    alert("Kunde inte spara. Kontrollera webbläsarens lagring.");
-    throw error;
-  }
+function currentPeriod() {
+  return data.periods.find(p => p.id === selectedId);
 }
 
-function ensureMonth(month) {
-  if (!data.months[month]) {
-    data.months[month] = {
-      income: 0,
-      expenses: []
-    };
-  }
-  return data.months[month];
+function element(tag, text, className) {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  if (className) e.className = className;
+  return e;
 }
 
-function getMonth() {
-  return ensureMonth(selectedMonth);
+function periodLabel(start) {
+  const d = parseDate(start);
+  return new Intl.DateTimeFormat("sv-SE", {
+    month: "long",
+    year: "numeric"
+  }).format(d);
 }
 
-function createElement(tag, text, className) {
-  const element = document.createElement(tag);
+function renderHeader() {
+  const p = currentPeriod();
 
-  if (text !== undefined) {
-    element.textContent = text;
-  }
+  $("periodTitle").textContent = periodLabel(p.start);
+  $("periodDates").textContent =
+    `${p.start} – ${p.end}`;
 
-  if (className) {
-    element.className = className;
-  }
+  $("payday").value = String(data.payday);
+  $("periodStart").value = p.start;
+  $("periodEnd").value = p.end;
+  $("income").value = p.income || "";
 
-  return element;
-}
-
-function renderSummary() {
-  const month = getMonth();
-
-  const total = month.expenses.reduce(
-    (sum, item) => sum + item.amount, 0
+  const index = data.periods.findIndex(
+    item => item.id === selectedId
   );
 
-  const remaining = month.income - total;
+  $("prevPeriod").disabled = index === 0;
+  $("nextPeriod").disabled =
+    index === data.periods.length - 1;
+}
 
-  $("totalIncome").textContent = money(month.income);
+function renderTotals() {
+  const p = currentPeriod();
+
+  const total = p.expenses.reduce(
+    (s, e) => s + e.amount, 0
+  );
+
+  const paid = p.expenses
+    .filter(e => e.paid)
+    .reduce((s, e) => s + e.amount, 0);
+
+  const unpaid = total - paid;
+  const available = p.income - total;
+
+  $("totalIncome").textContent = money(p.income);
   $("totalExpenses").textContent = money(total);
-  $("remaining").textContent = money(remaining);
+  $("available").textContent = money(available);
 
-  $("remaining").classList.toggle(
-    "negative", remaining < 0
+  $("paidTotal").textContent = money(paid);
+  $("unpaidTotal").textContent = money(unpaid);
+  $("balanceAfterPaid").textContent =
+    money(p.income - paid);
+
+  $("available").classList.toggle(
+    "negative", available < 0
   );
 }
 
 function renderCategories() {
-  const month = getMonth();
+  const p = currentPeriod();
   const container = $("categories");
-
   container.replaceChildren();
 
   for (const [key, category] of Object.entries(categories)) {
-    const items = month.expenses.filter(
-      item => item.category === key
+    const items = p.expenses.filter(
+      e => e.category === key
     );
 
     const spent = items.reduce(
-      (sum, item) => sum + item.amount, 0
+      (s, e) => s + e.amount, 0
     );
 
-    const target = month.income * category.percent / 100;
-
+    const target = p.income * category.percent / 100;
     const usage = target > 0
-      ? spent / target * 100
+      ? Math.min(100, spent / target * 100)
       : spent > 0 ? 100 : 0;
 
-    const wrapper = createElement("div", "", "category");
-    const heading = createElement(
+    const wrapper = element("div", "", "category");
+    const heading = element(
       "button", "", "category-heading"
     );
 
     heading.type = "button";
-    heading.setAttribute("aria-expanded", expanded[key]);
-
-    heading.append(
-      createElement(
-        "span",
-        `${category.percent}% – ${category.name}`
-      ),
-      createElement(
-        "strong",
-        `${money(spent)} ${expanded[key] ? "⌃" : "⌄"}`
-      )
+    heading.setAttribute(
+      "aria-expanded", String(expanded[key])
     );
 
-    heading.addEventListener("click", () => {
+    heading.append(
+      element("span", `${category.percent}% – ${category.name}`),
+      element("strong",
+        `${money(spent)} ${expanded[key] ? "⌃" : "⌄"}`)
+    );
+
+    heading.onclick = () => {
       expanded[key] = !expanded[key];
       renderCategories();
-    });
+    };
 
-    const description = createElement(
+    const description = element(
       "small",
       `Riktmärke: ${money(target)} • ` +
       `Kvar: ${money(target - spent)}`
     );
 
-    const progress = createElement("div", "", "progress");
-    const fill = createElement("div", "", "progress-fill");
-
-    fill.style.width = `${Math.min(100, usage)}%`;
+    const bar = element("div", "", "progress");
+    const fill = element("div", "", "progress-fill");
+    fill.style.width = usage + "%";
     fill.style.background = category.color;
+    bar.append(fill);
 
-    progress.append(fill);
-    wrapper.append(heading, description, progress);
+    wrapper.append(heading, description, bar);
 
     if (expanded[key]) {
-      const list = createElement(
-        "div", "", "category-items"
-      );
+      const list = element("div", "", "category-items");
 
-      if (items.length === 0) {
+      if (!items.length) {
         list.append(
-          createElement(
-            "p",
-            "Inga poster i denna kategori ännu.",
-            "muted small-text"
-          )
+          element("p", "Inga poster ännu.", "muted small")
         );
       }
 
       items.forEach(item => {
-        const row = createElement(
+        const row = element(
           "div", "", "category-item"
         );
 
         row.append(
-          createElement("span", item.name),
-          createElement("strong", money(item.amount))
+          element("span",
+            `${item.paid ? "✓" : "○"} ${item.name}`),
+          element("strong", money(item.amount))
         );
 
         list.append(row);
@@ -334,30 +419,6 @@ function renderCategories() {
   }
 }
 
-function startEdit(id) {
-  const item = getMonth().expenses.find(
-    expense => expense.id === id
-  );
-
-  if (!item) return;
-
-  editingId = id;
-
-  $("expenseName").value = item.name;
-  $("expenseAmount").value = item.amount;
-  $("expenseCategory").value = item.category;
-  $("expenseType").value = item.type;
-
-  $("formTitle").textContent = "✏️ Redigera post";
-  $("saveExpense").textContent = "Spara ändringar";
-  $("cancelEdit").classList.remove("hidden");
-
-  $("expenseForm").scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-}
-
 function resetForm() {
   editingId = null;
   $("expenseForm").reset();
@@ -366,49 +427,78 @@ function resetForm() {
   $("cancelEdit").classList.add("hidden");
 }
 
+function startEdit(id) {
+  const item = currentPeriod().expenses.find(
+    e => e.id === id
+  );
+
+  if (!item) return;
+
+  editingId = id;
+  $("expenseName").value = item.name;
+  $("expenseAmount").value = item.amount;
+  $("expenseCategory").value = item.category;
+  $("expenseType").value = item.type;
+  $("expenseDue").value = item.due;
+  $("expensePaid").checked = item.paid;
+
+  $("formTitle").textContent = "✏️ Redigera post";
+  $("saveExpense").textContent = "Spara ändringar";
+  $("cancelEdit").classList.remove("hidden");
+
+  $("entrySection").scrollIntoView({
+    behavior: "smooth"
+  });
+}
+
 function renderExpenses() {
   const list = $("expenseList");
-  const expenses = getMonth().expenses;
-
   list.replaceChildren();
 
-  if (expenses.length === 0) {
+  const expenses = currentPeriod().expenses;
+
+  if (!expenses.length) {
     list.append(
-      createElement(
-        "p",
-        "Inga poster registrerade denna månad.",
-        "empty"
-      )
+      element("p", "Inga poster registrerade.", "empty")
     );
     return;
   }
 
   expenses.forEach(item => {
-    const row = createElement("div", "", "expense");
-    const info = createElement("div");
+    const row = element("div", "", "expense");
+    const info = element("div", "", "expense-info");
 
     info.append(
-      createElement("strong", item.name),
-      createElement(
-        "small",
-        `${categories[item.category].name} • ` +
-        typeNames[item.type]
-      )
+      element("strong", item.name),
+      element("small",
+        `${categories[item.category].name} • ${types[item.type]}`),
+      element("small",
+        item.due ? `Betalningsdatum: ${item.due}` : "")
     );
 
-    const right = createElement(
-      "div", "", "expense-right"
+    const actions = element(
+      "div", "", "expense-actions"
     );
 
-    const edit = createElement(
-      "button", "✎", "edit-btn"
+    const paid = element(
+      "button",
+      item.paid ? "✓ Betald" : "○ Obetald",
+      item.paid ? "paid-btn" : "unpaid-btn"
     );
 
+    paid.type = "button";
+    paid.onclick = () => {
+      item.paid = !item.paid;
+      save();
+      render();
+    };
+
+    const edit = element("button", "✎", "edit-btn");
     edit.type = "button";
     edit.setAttribute("aria-label", "Redigera " + item.name);
     edit.onclick = () => startEdit(item.id);
 
-    const remove = createElement(
+    const remove = element(
       "button", "✕", "delete-btn"
     );
 
@@ -418,147 +508,184 @@ function renderExpenses() {
     remove.onclick = () => {
       if (!confirm(`Ta bort "${item.name}"?`)) return;
 
-      getMonth().expenses = getMonth().expenses.filter(
-        expense => expense.id !== item.id
-      );
+      currentPeriod().expenses =
+        currentPeriod().expenses.filter(
+          e => e.id !== item.id
+        );
 
-      saveData();
+      save();
       resetForm();
       render();
     };
 
-    right.append(
-      createElement("strong", money(item.amount)),
-      edit,
-      remove
+    actions.append(
+      element("strong", money(item.amount)),
+      paid, edit, remove
     );
 
-    row.append(info, right);
+    row.append(info, actions);
     list.append(row);
   });
 }
 
 function render() {
-  $("monthTitle").textContent = monthLabel(selectedMonth);
-  $("income").value = getMonth().income || "";
-
-  renderSummary();
+  renderHeader();
+  renderTotals();
   renderCategories();
   renderExpenses();
 }
 
-function changeMonth(offset) {
+// Välj lönedag
+
+for (let day = 1; day <= 31; day++) {
+  const option = element("option", `Den ${day}:e`);
+  option.value = day;
+  $("payday").append(option);
+}
+
+$("payday").onchange = () => {
+  data.payday = Number($("payday").value);
+  save();
+  alert(
+    "Lönedagen har sparats. " +
+    "Befintliga perioder ändras inte automatiskt."
+  );
+};
+
+// Ändra periodens datum
+
+$("saveDates").onclick = () => {
+  const start = $("periodStart").value;
+  const end = $("periodEnd").value;
+
+  if (!parseDate(start) || !parseDate(end) || end < start) {
+    alert("Kontrollera datumen.");
+    return;
+  }
+
+  const overlap = data.periods.some(p =>
+    p.id !== selectedId &&
+    start <= p.end && end >= p.start
+  );
+
+  if (overlap) {
+    alert("Datumen överlappar en annan löneperiod.");
+    return;
+  }
+
+  const p = currentPeriod();
+  p.start = start;
+  p.end = end;
+
+  data.periods.sort(
+    (a, b) => a.start.localeCompare(b.start)
+  );
+
+  save();
+  render();
+};
+
+// Byt mellan befintliga perioder
+
+function navigate(direction) {
+  const index = data.periods.findIndex(
+    p => p.id === selectedId
+  );
+
+  const next = data.periods[index + direction];
+  if (!next) return;
+
+  selectedId = next.id;
   resetForm();
-  selectedMonth = shiftMonth(selectedMonth, offset);
   render();
 }
 
-// Inkomst
+$("prevPeriod").onclick = () => navigate(-1);
+$("nextPeriod").onclick = () => navigate(1);
 
-$("income").addEventListener("change", event => {
-  const amount = Number(event.target.value);
+// Ändra inkomst
 
-  if (!Number.isFinite(amount) || amount < 0) {
+$("income").onchange = () => {
+  const value = Number($("income").value);
+
+  if (!Number.isFinite(value) || value < 0) {
     alert("Ange en giltig inkomst.");
     render();
     return;
   }
 
-  getMonth().income = amount;
-  saveData();
+  currentPeriod().income = value;
+  save();
   render();
-});
+};
 
-// Kostnader
+// Lägg till och redigera poster
 
-$("expenseForm").addEventListener("submit", event => {
+$("expenseForm").onsubmit = event => {
   event.preventDefault();
 
   const name = $("expenseName").value.trim();
   const amount = Number($("expenseAmount").value);
   const category = $("expenseCategory").value;
   const type = $("expenseType").value;
+  const due = $("expenseDue").value;
+  const paid = $("expensePaid").checked;
 
-  if (!name ||
-      !Number.isFinite(amount) ||
-      amount <= 0 ||
-      !categories[category] ||
-      !typeNames[type]) {
+  if (!name || !Number.isFinite(amount) ||
+      amount <= 0 || !categories[category] ||
+      !types[type] || (due && !parseDate(due))) {
     alert("Kontrollera uppgifterna.");
     return;
   }
 
-  const month = getMonth();
+  const values = {
+    name, amount, category, type, due, paid
+  };
 
   if (editingId) {
-    const item = month.expenses.find(
-      expense => expense.id === editingId
+    const item = currentPeriod().expenses.find(
+      e => e.id === editingId
     );
-
-    if (item) {
-      Object.assign(item, {
-        name, amount, category, type
-      });
-    }
+    if (item) Object.assign(item, values);
   } else {
-    month.expenses.push({
-      id: crypto.randomUUID(),
-      name,
-      amount,
-      category,
-      type
+    currentPeriod().expenses.push({
+      id: uid(), ...values
     });
   }
 
-  saveData();
+  save();
   resetForm();
   render();
-});
+};
 
 $("cancelEdit").onclick = resetForm;
 
-$("prevMonth").onclick = () => changeMonth(-1);
-$("nextMonth").onclick = () => changeMonth(1);
+// Manuell kopiering
 
-// Kopiera månad manuellt
+$("createPeriod").onclick = () => {
+  const source = currentPeriod();
 
-$("createMonth").onclick = () => {
-  const source = getMonth();
-  const list = $("copyList");
+  $("newStart").value =
+    addDays(source.end, 1);
 
-  list.replaceChildren();
-
-  $("targetMonth").value = shiftMonth(selectedMonth, 1);
   $("copyIncome").checked = true;
-
-  if (source.expenses.length === 0) {
-    list.append(
-      createElement("p", "Inga poster att kopiera.", "muted")
-    );
-  }
+  $("copyList").replaceChildren();
 
   source.expenses.forEach(item => {
-    const label = createElement(
-      "label", "", "check-row"
-    );
-
+    const label = element("label", "", "check-row");
     const checkbox = document.createElement("input");
+
     checkbox.type = "checkbox";
     checkbox.value = item.id;
-
-    // Fasta kostnader och lån förvalda.
     checkbox.checked =
       item.type === "fast" || item.type === "lan";
 
     label.append(
       checkbox,
-      createElement(
-        "span",
-        `${item.name} – ${money(item.amount)}`
-      )
+      element("span", `${item.name} – ${money(item.amount)}`)
     );
 
-    list.append(label);
+    $("copyList").append(label);
   });
 
   $("copyDialog").showModal();
@@ -569,120 +696,128 @@ $("cancelCopy").onclick = () => {
 };
 
 $("confirmCopy").onclick = () => {
-  const target = $("targetMonth").value;
+  const start = $("newStart").value;
 
-  if (!validMonth(target)) {
-    alert("Välj en giltig månad.");
+  if (!parseDate(start)) {
+    alert("Välj ett giltigt lönedatum.");
     return;
   }
 
-  if (target === selectedMonth) {
-    alert("Välj en annan månad.");
+  const source = currentPeriod();
+
+  if (start <= source.end) {
+    alert("Nästa period måste börja efter den nuvarande.");
     return;
   }
 
-  if (data.months[target]) {
-    alert("Månaden finns redan. Välj en annan månad.");
+  const end = addDays(
+    nextPayday(start, data.payday), -1
+  );
+
+  if (end < start) {
+    alert("Kontrollera lönedatumet.");
     return;
   }
 
-  const source = getMonth();
+  if (data.periods.some(p =>
+    start <= p.end && end >= p.start
+  )) {
+    alert(
+      "Perioden överlappar en befintlig period. " +
+      "Justera datumen först."
+    );
+    return;
+  }
 
-  const selectedIds = new Set(
+  const ids = new Set(
     [...$("copyList").querySelectorAll(
       'input[type="checkbox"]:checked'
     )].map(input => input.value)
   );
 
   const expenses = source.expenses
-    .filter(item => selectedIds.has(item.id))
+    .filter(item => ids.has(item.id))
     .map(item => ({
       ...item,
-      id: crypto.randomUUID()
+      id: uid(),
+      paid: false,
+      due: ""
     }));
 
-  data.months[target] = {
+  const next = {
+    id: uid(),
+    start,
+    end,
     income: $("copyIncome").checked
       ? source.income : 0,
     expenses
   };
 
-  saveData();
-  selectedMonth = target;
-  resetForm();
+  data.periods.push(next);
+  data.periods.sort(
+    (a, b) => a.start.localeCompare(b.start)
+  );
 
+  selectedId = next.id;
+  save();
+  resetForm();
   $("copyDialog").close();
   render();
 };
 
-// Exportera säkerhetskopia
+// Säkerhetskopiering
 
 $("exportData").onclick = () => {
-  const content = JSON.stringify({
-    app: "MinBudget",
-    version: 2,
-    exportedAt: new Date().toISOString(),
-    months: data.months
-  }, null, 2);
-
-  const blob = new Blob([content], {
-    type: "application/json"
-  });
+  const blob = new Blob(
+    [JSON.stringify(data, null, 2)],
+    { type: "application/json" }
+  );
 
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const a = document.createElement("a");
 
-  link.href = url;
-  link.download = "minbudget-backup-" +
-    currentMonth() + ".json";
-
-  document.body.append(link);
-  link.click();
-  link.remove();
+  a.href = url;
+  a.download = `minbudget-backup-${today()}.json`;
+  document.body.append(a);
+  a.click();
+  a.remove();
 
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-// Importera säkerhetskopia
-
-$("importFile").addEventListener("change", async event => {
+$("importFile").onchange = async event => {
   const file = event.target.files[0];
-
   if (!file) return;
 
   try {
-    const content = await file.text();
-    const imported = validateDatabase(
-      JSON.parse(content)
+    const imported = validate(
+      JSON.parse(await file.text())
     );
 
-    const confirmed = confirm(
-      "Importen ersätter alla dina nuvarande " +
-      "månader. Vill du fortsätta?"
-    );
+    if (!imported.periods.length) {
+      throw new Error("Säkerhetskopian är tom");
+    }
 
-    if (!confirmed) return;
+    if (!confirm(
+      "Alla nuvarande uppgifter ersätts. Fortsätta?"
+    )) return;
 
-    // Spara först, byt därefter aktiv data.
     localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(imported)
+      KEY, JSON.stringify(imported)
     );
 
     data = imported;
-    selectedMonth = currentMonth();
+    selectedId = data.periods[0].id;
     resetForm();
     render();
 
-    alert("Säkerhetskopian har återställts.");
+    alert("Säkerhetskopian är återställd.");
   } catch (error) {
     console.error(error);
-    alert("Kunde inte importera filen.");
+    alert("Kunde inte läsa säkerhetskopian.");
   } finally {
     event.target.value = "";
   }
-});
-
-// Starta appen
+};
 
 render();
