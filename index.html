@@ -11,26 +11,25 @@
 </head>
 <body>
 <main class="app">
-
   <header class="header">
     <div>
       <h1>💰 MinBudget</h1>
       <p>Din ekonomi, enkelt.</p>
     </div>
     <button id="settingsBtn" class="icon-btn"
-      aria-label="Inställningar">⚙️</button>
+      aria-label="Öppna inställningar">⚙️</button>
   </header>
 
   <section class="card overview">
     <div class="period-nav">
       <button id="prevPeriod" class="arrow-btn"
-        aria-label="Föregående period">‹</button>
+        aria-label="Föregående löneperiod">‹</button>
       <div>
         <h2 id="periodName"></h2>
         <p id="periodDates"></p>
       </div>
       <button id="nextPeriod" class="arrow-btn"
-        aria-label="Nästa period">›</button>
+        aria-label="Nästa löneperiod">›</button>
     </div>
 
     <div class="divider"></div>
@@ -38,7 +37,7 @@
     <p class="eyebrow">Kvar att använda</p>
     <div id="available" class="big-amount">0 kr</div>
     <p class="hint">
-      Efter alla planerade kostnader och sparande
+      Efter alla registrerade utgifter och sparande
     </p>
 
     <div class="payment-summary">
@@ -69,10 +68,9 @@
     + Ny löneperiod
   </button>
 
-  <footer>MinBudget 4.0</footer>
+  <footer>MinBudget 4.1</footer>
 </main>
 
-<!-- Lägg till / redigera -->
 <dialog id="expenseDialog">
   <form id="expenseForm" class="dialog-body">
     <h2 id="expenseDialogTitle">Lägg till kostnad</h2>
@@ -118,7 +116,6 @@
   </form>
 </dialog>
 
-<!-- Inställningar -->
 <dialog id="settingsDialog">
   <div class="dialog-body">
     <h2>⚙️ Inställningar</h2>
@@ -130,10 +127,11 @@
     <label for="payday">Vanlig lönedag</label>
     <select id="payday"></select>
     <p class="hint">
-      Gäller nya perioder. Ändrar inte gamla.
+      Används när nya perioder föreslås.
+      Ändrar inte tidigare perioder.
     </p>
 
-    <h3>Den valda löneperioden</h3>
+    <h3>Vald löneperiod</h3>
 
     <label for="periodStart">Startdatum</label>
     <input id="periodStart" type="date">
@@ -150,15 +148,19 @@
     </button>
 
     <h3>Säkerhetskopiering</h3>
+
     <button id="exportBtn" class="secondary-btn">
       Ladda ner säkerhetskopia
     </button>
 
-    <label for="importFile">Återställ säkerhetskopia</label>
+    <label for="importFile">
+      Återställ säkerhetskopia
+    </label>
     <input id="importFile" type="file"
       accept=".json,application/json">
+
     <p class="hint">
-      Import ersätter dina nuvarande uppgifter.
+      Import ersätter uppgifterna i den här versionen.
     </p>
 
     <button id="closeSettings" class="secondary-btn">
@@ -167,7 +169,6 @@
   </div>
 </dialog>
 
-<!-- Ny löneperiod -->
 <dialog id="periodDialog">
   <div class="dialog-body">
     <h2>Ny löneperiod</h2>
@@ -197,6 +198,5 @@
     </button>
   </div>
 </dialog>
-
 </body>
 </html>
