@@ -8,17 +8,17 @@ const categoryInfo = {
   behov: {
     name: "Behov",
     percent: 50,
-    color: "#167c80"
+    color: "#65b8af"
   },
   onskemal: {
     name: "Tänk efter",
     percent: 30,
-    color: "#e88b43"
+    color: "#e5a267"
   },
   framtid: {
     name: "Framtid",
     percent: 20,
-    color: "#3e956a"
+    color: "#80c99b"
   }
 };
 
