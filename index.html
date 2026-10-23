@@ -33,6 +33,7 @@
       </div>
 
       <div class="divider"></div>
+
       <p class="eyebrow">Kvar att använda</p>
       <div id="available" class="big-amount">0 kr</div>
       <p class="hint">
@@ -49,6 +50,28 @@
           <strong id="unpaidTotal">0 kr</strong>
         </div>
       </div>
+
+      <div class="mini-chart-section">
+        <button id="chartOpenBtn"
+          class="mini-chart-button"
+          type="button"
+          aria-label="Visa större utgiftsdiagram">
+          <span class="mini-chart-title">
+            <strong>📈 Utgifter mellan lönerna</strong>
+            <span>Visa mer ›</span>
+          </span>
+          <svg id="miniChart"
+            viewBox="0 0 340 68"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Utgifter per dag">
+          </svg>
+          <span class="mini-chart-dates">
+            <span id="miniStart"></span>
+            <span id="miniEnd"></span>
+          </span>
+        </button>
+      </div>
     </section>
 
     <section class="card">
@@ -62,11 +85,12 @@
     <button id="addBtn" class="primary-btn">
       + Lägg till kostnad
     </button>
+
     <button id="newPeriodBtn" class="secondary-btn">
       + Ny löneperiod
     </button>
 
-    <footer>MinBudget 4.3</footer>
+    <footer>MinBudget 4.4</footer>
   </main>
 
   <dialog id="expenseDialog">
@@ -97,7 +121,7 @@
       </select>
 
       <label for="expenseDue">
-        Betalningsdatum (valfritt)
+        Förfallodatum (valfritt)
       </label>
       <input id="expenseDue" type="date">
 
@@ -105,6 +129,17 @@
         <input id="expensePaid" type="checkbox">
         Redan betald / överförd
       </label>
+
+      <div id="paidDateGroup" class="hidden">
+        <label for="expensePaidDate">
+          Betald datum
+        </label>
+        <input id="expensePaidDate" type="date">
+        <p class="hint">
+          Fylls i automatiskt när du markerar betald.
+          Kan ändras i efterhand.
+        </p>
+      </div>
 
       <button type="submit" class="primary-btn">
         Spara
@@ -148,6 +183,7 @@
       </button>
 
       <h3>Säkerhetskopiering</h3>
+
       <button id="exportBtn" class="secondary-btn">
         Ladda ner säkerhetskopia
       </button>
@@ -195,6 +231,51 @@
       <button id="cancelPeriod" class="secondary-btn">
         Avbryt
       </button>
+    </div>
+  </dialog>
+
+  <dialog id="chartDialog" class="chart-dialog">
+    <div class="dialog-body">
+      <div class="chart-dialog-heading">
+        <h2>📈 Pengarnas rörelse</h2>
+        <button id="closeChart" type="button"
+          class="chart-close"
+          aria-label="Stäng diagrammet">✕</button>
+      </div>
+
+      <p id="chartPeriod" class="hint"></p>
+
+      <div class="chart-stats">
+        <div>
+          <small>Registrerade betalningar</small>
+          <strong id="chartTotal">0 kr</strong>
+        </div>
+        <div>
+          <small>Största dagen</small>
+          <strong id="chartMax">0 kr</strong>
+        </div>
+      </div>
+
+      <div class="chart-large-wrap">
+        <svg id="largeChart"
+          viewBox="0 0 340 180"
+          role="img"
+          aria-label="Detaljerat diagram över utgifter per dag">
+        </svg>
+        <div class="chart-axis-dates">
+          <span id="chartStart"></span>
+          <span id="chartEnd"></span>
+        </div>
+      </div>
+
+      <p id="chartHelp" class="hint">
+        Tryck på en topp för att se dagens betalningar.
+      </p>
+
+      <div id="chartDetails" class="chart-details"></div>
+
+      <button id="closeChartBottom" type="button"
+        class="secondary-btn">Stäng</button>
     </div>
   </dialog>
 </body>
