@@ -17,19 +17,16 @@ const typeNames = {
   sparande: "Sparande"
 };
 
-const money = value =>
-  new Intl.NumberFormat("sv-SE", {
-    style: "currency",
-    currency: "SEK",
-    maximumFractionDigits: 2
-  }).format(value);
+const money = value => new Intl.NumberFormat("sv-SE", {
+  style: "currency",
+  currency: "SEK",
+  maximumFractionDigits: 2
+}).format(value);
 
 const uid = () =>
-  typeof crypto !== "undefined" &&
-  typeof crypto.randomUUID === "function"
+  typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
-    : Date.now().toString(36) +
-      Math.random().toString(36).slice(2);
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 function dateString(date) {
   return date.getFullYear() + "-" +
@@ -45,8 +42,7 @@ function parseDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return null;
   const date = new Date(value + "T12:00:00");
   return !Number.isNaN(date.getTime()) && dateString(date) === value
-    ? date
-    : null;
+    ? date : null;
 }
 
 function addDays(value, count) {
@@ -59,24 +55,21 @@ function addDays(value, count) {
 function daysBetween(start, end) {
   const a = parseDate(start);
   const b = parseDate(end);
-  if (!a || !b) return 0;
-  return Math.round((b.getTime() - a.getTime()) / 86400000);
+  return a && b
+    ? Math.round((b.getTime() - a.getTime()) / 86400000)
+    : 0;
 }
 
 function paydayInMonth(year, month, day) {
-  const lastDay = new Date(year, month, 0).getDate();
-  return dateString(
-    new Date(year, month - 1, Math.min(day, lastDay))
-  );
+  return dateString(new Date(
+    year, month - 1,
+    Math.min(day, new Date(year, month, 0).getDate())
+  ));
 }
 
 function nextPayday(start, payday) {
   const date = parseDate(start);
-  const next = new Date(
-    date.getFullYear(),
-    date.getMonth() + 1,
-    1
-  );
+  const next = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   return paydayInMonth(
     next.getFullYear(),
     next.getMonth() + 1,
@@ -84,16 +77,15 @@ function nextPayday(start, payday) {
   );
 }
 
-function periodAround(date, payday) {
-  const current = parseDate(date);
-
+function periodAround(value, payday) {
+  const current = parseDate(value);
   let start = paydayInMonth(
     current.getFullYear(),
     current.getMonth() + 1,
     payday
   );
 
-  if (start > date) {
+  if (start > value) {
     const previous = new Date(
       current.getFullYear(),
       current.getMonth() - 1,
@@ -113,7 +105,14 @@ function periodAround(date, payday) {
 }
 
 function makePeriod(start, end, income = 0, expenses = []) {
-  return { id: uid(), start, end, income, expenses };
+  return {
+    id: uid(),
+    start,
+    end,
+    income,
+    expenses,
+    withdrawals: []
+  };
 }
 
 function normalizeExpense(item) {
@@ -126,6 +125,15 @@ function normalizeExpense(item) {
     paid: item.paid === true,
     due: item.due || "",
     paidDate: item.paidDate || ""
+  };
+}
+
+function normalizeWithdrawal(item) {
+  return {
+    id: String(item.id || uid()),
+    name: String(item.name || "").trim(),
+    amount: Number(item.amount),
+    date: item.date || ""
   };
 }
 
@@ -148,7 +156,9 @@ function validateData(raw) {
       period.end < period.start ||
       !Number.isFinite(Number(period.income)) ||
       Number(period.income) < 0 ||
-      !Array.isArray(period.expenses)
+      !Array.isArray(period.expenses) ||
+      (period.withdrawals !== undefined &&
+        !Array.isArray(period.withdrawals))
     ) {
       throw new Error("Ogiltig löneperiod");
     }
@@ -172,12 +182,37 @@ function validateData(raw) {
       return expense;
     });
 
+    const withdrawals = (period.withdrawals || []).map(item => {
+      const withdrawal = normalizeWithdrawal(item);
+
+      if (
+        !withdrawal.name ||
+        !Number.isFinite(withdrawal.amount) ||
+        withdrawal.amount <= 0 ||
+        !parseDate(withdrawal.date)
+      ) {
+        throw new Error("Ogiltigt uttag");
+      }
+
+      return withdrawal;
+    });
+
+    const transactionIds = [
+      ...expenses.map(item => item.id),
+      ...withdrawals.map(item => item.id)
+    ];
+
+    if (new Set(transactionIds).size !== transactionIds.length) {
+      throw new Error("Dubbla transaktions-ID");
+    }
+
     return {
       id: String(period.id || uid()),
       start: period.start,
       end: period.end,
       income: Number(period.income),
-      expenses
+      expenses,
+      withdrawals
     };
   });
 
@@ -190,6 +225,7 @@ function validateData(raw) {
   }
 
   const ids = periods.map(period => period.id);
+
   if (new Set(ids).size !== ids.length) {
     throw new Error("Dubbla period-ID");
   }
@@ -199,7 +235,6 @@ function validateData(raw) {
 
 function migrateOldData() {
   const v3 = localStorage.getItem("minbudget_v3");
-
   if (v3) return validateData(JSON.parse(v3));
 
   const v2 = localStorage.getItem("minbudget_v2");
@@ -249,7 +284,6 @@ function migrateOldData() {
 
   if (v1) {
     const old = JSON.parse(v1);
-
     if (!Array.isArray(old.expenses)) {
       throw new Error("Ogiltig version 1");
     }
@@ -279,16 +313,10 @@ function migrateOldData() {
 
 function loadData() {
   const saved = localStorage.getItem(STORAGE_KEY);
-
   if (saved) return validateData(JSON.parse(saved));
 
   const migrated = migrateOldData();
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(migrated)
-  );
-
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
   return migrated;
 }
 
@@ -308,10 +336,7 @@ try {
 
 function save() {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(data)
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
     alert("Kunde inte spara uppgifterna.");
     throw error;
@@ -326,12 +351,12 @@ if (data.periods.length === 0) {
 
 let selectedId =
   data.periods.find(period =>
-    period.start <= today() &&
-    period.end >= today()
+    period.start <= today() && period.end >= today()
   )?.id ||
   data.periods[data.periods.length - 1].id;
 
 let editingId = null;
+let editingWithdrawalId = null;
 
 const expanded = {
   behov: false,
@@ -340,9 +365,7 @@ const expanded = {
 };
 
 function currentPeriod() {
-  return data.periods.find(
-    period => period.id === selectedId
-  );
+  return data.periods.find(period => period.id === selectedId);
 }
 
 function el(tag, text = "", className = "") {
@@ -359,38 +382,37 @@ function periodName(start) {
   }).format(parseDate(start));
 }
 
-function formatDate(date) {
+function formatDate(value) {
   return new Intl.DateTimeFormat("sv-SE", {
     day: "numeric",
     month: "short"
-  }).format(parseDate(date));
+  }).format(parseDate(value));
 }
 
-function longDate(date) {
+function longDate(value) {
   return new Intl.DateTimeFormat("sv-SE", {
     day: "numeric",
     month: "long",
     year: "numeric"
-  }).format(parseDate(date));
+  }).format(parseDate(value));
+}
+
+function sumAmounts(items) {
+  return items.reduce((sum, item) => sum + item.amount, 0);
 }
 
 function totals() {
   const period = currentPeriod();
-
-  const total = period.expenses.reduce(
-    (sum, item) => sum + item.amount,
-    0
-  );
-
-  const paid = period.expenses
-    .filter(item => item.paid)
-    .reduce((sum, item) => sum + item.amount, 0);
+  const total = sumAmounts(period.expenses);
+  const paid = sumAmounts(period.expenses.filter(item => item.paid));
+  const withdrawals = sumAmounts(period.withdrawals);
 
   return {
     total,
     paid,
     unpaid: total - paid,
-    available: period.income - total
+    withdrawals,
+    available: period.income - total + withdrawals
   };
 }
 
@@ -399,16 +421,12 @@ function renderOverview() {
   const amounts = totals();
 
   $("periodName").textContent = periodName(period.start);
-
   $("periodDates").textContent =
-    formatDate(period.start) +
-    " – " +
-    formatDate(period.end) +
-    " " +
+    formatDate(period.start) + " – " +
+    formatDate(period.end) + " " +
     parseDate(period.end).getFullYear();
 
   $("available").textContent = money(amounts.available);
-
   $("available").classList.toggle(
     "negative",
     amounts.available < 0
@@ -417,27 +435,37 @@ function renderOverview() {
   $("paidTotal").textContent = money(amounts.paid);
   $("unpaidTotal").textContent = money(amounts.unpaid);
 
+  $("withdrawalSummary").classList.toggle(
+    "hidden",
+    amounts.withdrawals === 0
+  );
+  $("withdrawalTotal").textContent =
+    "−" + money(amounts.withdrawals);
+
   const index = data.periods.findIndex(
     period => period.id === selectedId
   );
 
   $("prevPeriod").disabled = index <= 0;
-  $("nextPeriod").disabled =
-    index >= data.periods.length - 1;
+  $("nextPeriod").disabled = index >= data.periods.length - 1;
+}
+
+function makeActionButton(text, className, label, action) {
+  const button = el("button", text, className);
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  button.onclick = action;
+  return button;
 }
 
 function editExpense(id) {
   const item = currentPeriod().expenses.find(
     expense => expense.id === id
   );
-
   if (!item) return;
 
   editingId = id;
-
-  $("expenseDialogTitle").textContent =
-    "Redigera kostnad";
-
+  $("expenseDialogTitle").textContent = "Redigera kostnad";
   $("expenseName").value = item.name;
   $("expenseAmount").value = item.amount;
   $("expenseCategory").value = item.category;
@@ -447,9 +475,23 @@ function editExpense(id) {
   $("expensePaidDate").value = item.paidDate;
 
   $("deleteExpense").classList.remove("hidden");
-
   updatePaidDateField(false);
   $("expenseDialog").showModal();
+}
+
+function editWithdrawal(id) {
+  const item = currentPeriod().withdrawals.find(
+    withdrawal => withdrawal.id === id
+  );
+  if (!item) return;
+
+  editingWithdrawalId = id;
+  $("withdrawTitle").textContent = "Redigera uttag";
+  $("withdrawName").value = item.name;
+  $("withdrawAmount").value = item.amount;
+  $("withdrawDate").value = item.date;
+  $("deleteWithdraw").classList.remove("hidden");
+  $("withdrawDialog").showModal();
 }
 
 function renderCategories() {
@@ -457,40 +499,37 @@ function renderCategories() {
   container.replaceChildren();
 
   const period = currentPeriod();
+  const withdrawalTotal = sumAmounts(period.withdrawals);
 
   for (const [key, category] of Object.entries(categoryInfo)) {
     const items = period.expenses.filter(
       item => item.category === key
     );
 
-    const total = items.reduce(
-      (sum, item) => sum + item.amount,
-      0
-    );
+    const total = sumAmounts(items);
+    const paid = sumAmounts(items.filter(item => item.paid));
+    const unpaid = total - paid;
+    const budget = period.income * category.percent / 100;
+    const isFuture = key === "framtid";
 
-    const spent = items
-      .filter(item => item.paid)
-      .reduce((sum, item) => sum + item.amount, 0);
-
-    const unpaid = total - spent;
-
-    const budget =
-      period.income * category.percent / 100;
-
-    const remaining = budget - total;
+    // Framtid räknar sparande minus uttag.
+    const savedNet = total - withdrawalTotal;
+    const paidNet = paid - withdrawalTotal;
+    const difference = isFuture
+      ? savedNet - budget
+      : budget - total;
 
     const percentage = budget > 0
-      ? Math.min(100, total / budget * 100)
-      : total > 0 ? 100 : 0;
+      ? Math.min(
+          100,
+          Math.max(0, (isFuture ? savedNet : total) / budget * 100)
+        )
+      : (isFuture ? savedNet : total) > 0 ? 100 : 0;
 
     const wrapper = el("div", "", "category");
     const toggle = el("button", "", "category-toggle");
-
     toggle.type = "button";
-    toggle.setAttribute(
-      "aria-expanded",
-      String(expanded[key])
-    );
+    toggle.setAttribute("aria-expanded", String(expanded[key]));
 
     const title = el("div", "", "category-title");
     const dot = el("span", "", "dot");
@@ -503,17 +542,11 @@ function renderCategories() {
     );
 
     const value = el("div", "", "category-value");
-
     value.append(
-      el(
-        "span",
-        expanded[key] ? "⌃" : "⌄",
-        "chevron"
-      )
+      el("span", expanded[key] ? "⌃" : "⌄", "chevron")
     );
 
     toggle.append(title, value);
-
     toggle.onclick = () => {
       expanded[key] = !expanded[key];
       renderCategories();
@@ -521,56 +554,81 @@ function renderCategories() {
 
     const progress = el("div", "", "progress");
     const fill = el("div", "", "progress-fill");
-
     fill.style.width = percentage + "%";
     fill.style.background = category.color;
     progress.append(fill);
 
     const summary = el("div", "", "category-summary");
-    const spentBox = el("div", "", "category-number");
+    const leftBox = el("div", "", "category-number");
 
-    spentBox.append(
-      el("small", "Spenderat"),
-      el("strong", money(spent))
+    leftBox.append(
+      el("small", isFuture ? "Sparade pengar" : "Spenderat"),
+      el("strong", money(isFuture ? paidNet : paid))
     );
 
-    const remainingBox = el(
+    if (isFuture && paidNet < 0) {
+      leftBox.querySelector("strong").classList.add(
+        "savings-negative"
+      );
+    }
+
+    const rightBox = el(
       "div",
       "",
       "category-number remaining"
     );
 
-    remainingBox.append(
-      el(
-        "small",
-        remaining < 0
-          ? "Över budgeten"
-          : "Kvar av budgeten"
-      ),
-      el("strong", money(Math.abs(remaining)))
-    );
+    if (isFuture) {
+      if (difference >= 0) {
+        rightBox.append(
+          el("small", "Extra sparat"),
+          el("strong", "+" + money(difference))
+        );
+        rightBox.querySelector("strong").classList.add(
+          "savings-positive"
+        );
+      } else {
+        rightBox.append(
+          el("small", "Kvar till sparmålet"),
+          el("strong", money(-difference))
+        );
+      }
+    } else {
+      rightBox.append(
+        el(
+          "small",
+          difference < 0 ? "Över budgeten" : "Kvar av budgeten"
+        ),
+        el("strong", money(Math.abs(difference)))
+      );
 
-    if (remaining < 0) {
-      remainingBox.classList.add("over-budget");
+      if (difference < 0) {
+        rightBox.classList.add("over-budget");
+      }
     }
 
-    summary.append(spentBox, remainingBox);
+    summary.append(leftBox, rightBox);
 
     const budgetHint = el(
       "p",
-      "Budget enligt " +
-      category.percent +
-      " % av lönen: " +
-      money(budget),
+      isFuture
+        ? "Sparmål enligt 20 % av lönen: " + money(budget)
+        : "Budget enligt " + category.percent +
+          " % av lönen: " + money(budget),
       "category-budget-hint"
     );
 
-    wrapper.append(
-      toggle,
-      progress,
-      summary,
-      budgetHint
-    );
+    wrapper.append(toggle, progress, summary, budgetHint);
+
+    if (isFuture && withdrawalTotal > 0) {
+      wrapper.append(
+        el(
+          "p",
+          "Tagit från sparandet: −" + money(withdrawalTotal),
+          "savings-note savings-negative"
+        )
+      );
+    }
 
     if (key === "onskemal") {
       wrapper.append(
@@ -589,16 +647,18 @@ function renderCategories() {
         detail.append(
           el(
             "p",
-            "Kvar att betala: " + money(unpaid),
+            (isFuture ? "Kvar att överföra: " : "Kvar att betala: ") +
+              money(unpaid),
             "category-unpaid"
           )
         );
       }
 
-      if (items.length === 0) {
-        detail.append(
-          el("p", "Inga kostnader ännu.", "empty")
-        );
+      if (
+        items.length === 0 &&
+        (!isFuture || period.withdrawals.length === 0)
+      ) {
+        detail.append(el("p", "Inga poster ännu.", "empty"));
       }
 
       items.forEach(item => {
@@ -608,13 +668,11 @@ function renderCategories() {
         let description = typeNames[item.type];
 
         if (item.due) {
-          description +=
-            " • Förfaller " + formatDate(item.due);
+          description += " • Förfaller " + formatDate(item.due);
         }
 
         if (item.paid && item.paidDate) {
-          description +=
-            " • Betald " + formatDate(item.paidDate);
+          description += " • Betald " + formatDate(item.paidDate);
         }
 
         info.append(
@@ -624,46 +682,29 @@ function renderCategories() {
 
         const actions = el("div", "", "item-actions");
 
-        const paidButton = el(
-          "button",
+        const paidButton = makeActionButton(
           item.paid ? "✓ Betald" : "○ Obetald",
-          "paid-toggle" + (item.paid ? " is-paid" : "")
-        );
-
-        paidButton.type = "button";
-
-        paidButton.setAttribute(
-          "aria-label",
-          "Ändra betalningsstatus för " + item.name
-        );
-
-        paidButton.onclick = () => {
-          if (item.paid) {
-            item.paid = false;
-            item.paidDate = "";
-          } else {
-            item.paid = true;
-            item.paidDate = today();
+          "paid-toggle" + (item.paid ? " is-paid" : ""),
+          "Ändra betalningsstatus för " + item.name,
+          () => {
+            if (item.paid) {
+              item.paid = false;
+              item.paidDate = "";
+            } else {
+              item.paid = true;
+              item.paidDate = today();
+            }
+            save();
+            render();
           }
+        );
 
-          save();
-          render();
-        };
-
-        const editButton = el(
-          "button",
+        const editButton = makeActionButton(
           "✎",
-          "edit-btn"
+          "edit-btn",
+          "Redigera " + item.name,
+          () => editExpense(item.id)
         );
-
-        editButton.type = "button";
-
-        editButton.setAttribute(
-          "aria-label",
-          "Redigera " + item.name
-        );
-
-        editButton.onclick = () => editExpense(item.id);
 
         actions.append(
           el("strong", money(item.amount)),
@@ -675,6 +716,38 @@ function renderCategories() {
         detail.append(row);
       });
 
+      if (isFuture) {
+        period.withdrawals.forEach(item => {
+          const row = el(
+            "div",
+            "",
+            "category-item withdrawal-item"
+          );
+          const info = el("div", "", "item-info");
+
+          info.append(
+            el("strong", "Uttag: " + item.name),
+            el("small", formatDate(item.date))
+          );
+
+          const actions = el("div", "", "item-actions");
+          const editButton = makeActionButton(
+            "✎",
+            "edit-btn",
+            "Redigera uttag " + item.name,
+            () => editWithdrawal(item.id)
+          );
+
+          actions.append(
+            el("strong", "−" + money(item.amount)),
+            editButton
+          );
+
+          row.append(info, actions);
+          detail.append(row);
+        });
+      }
+
       wrapper.append(detail);
     }
 
@@ -684,28 +757,16 @@ function renderCategories() {
 
 function updatePaidDateField(fillToday = true) {
   const paid = $("expensePaid").checked;
+  $("paidDateGroup").classList.toggle("hidden", !paid);
 
-  $("paidDateGroup").classList.toggle(
-    "hidden",
-    !paid
-  );
-
-  if (
-    paid &&
-    fillToday &&
-    !$("expensePaidDate").value
-  ) {
+  if (paid && fillToday && !$("expensePaidDate").value) {
     $("expensePaidDate").value = today();
   }
 
-  if (!paid) {
-    $("expensePaidDate").value = "";
-  }
+  if (!paid) $("expensePaidDate").value = "";
 }
 
-$("expensePaid").onchange = () => {
-  updatePaidDateField(true);
-};
+$("expensePaid").onchange = () => updatePaidDateField(true);
 
 function closeExpense() {
   editingId = null;
@@ -718,12 +779,8 @@ function closeExpense() {
 $("addBtn").onclick = () => {
   editingId = null;
   $("expenseForm").reset();
-
-  $("expenseDialogTitle").textContent =
-    "Lägg till kostnad";
-
+  $("expenseDialogTitle").textContent = "Lägg till kostnad";
   $("deleteExpense").classList.add("hidden");
-
   updatePaidDateField(false);
   $("expenseDialog").showModal();
 };
@@ -740,9 +797,7 @@ $("expenseForm").onsubmit = event => {
   const due = $("expenseDue").value;
   const paid = $("expensePaid").checked;
 
-  let paidDate = paid
-    ? $("expensePaidDate").value
-    : "";
+  let paidDate = paid ? $("expensePaidDate").value : "";
 
   if (paid && !paidDate && !editingId) {
     paidDate = today();
@@ -762,20 +817,13 @@ $("expenseForm").onsubmit = event => {
   }
 
   const values = {
-    name,
-    amount,
-    category,
-    type,
-    due,
-    paid,
-    paidDate
+    name, amount, category, type, due, paid, paidDate
   };
 
   if (editingId) {
     const item = currentPeriod().expenses.find(
       expense => expense.id === editingId
     );
-
     if (item) Object.assign(item, values);
   } else {
     currentPeriod().expenses.push({
@@ -790,22 +838,96 @@ $("expenseForm").onsubmit = event => {
 };
 
 $("deleteExpense").onclick = () => {
-  if (
-    !editingId ||
-    !confirm("Vill du ta bort kostnaden?")
-  ) {
+  if (!editingId || !confirm("Vill du ta bort kostnaden?")) {
     return;
   }
 
-  currentPeriod().expenses =
-    currentPeriod().expenses.filter(
-      item => item.id !== editingId
-    );
+  currentPeriod().expenses = currentPeriod().expenses.filter(
+    item => item.id !== editingId
+  );
 
   save();
   closeExpense();
   render();
 };
+
+// Uttag från sparandet
+
+function closeWithdraw() {
+  editingWithdrawalId = null;
+  $("withdrawForm").reset();
+  $("deleteWithdraw").classList.add("hidden");
+  $("withdrawDialog").close();
+}
+
+$("withdrawBtn").onclick = () => {
+  editingWithdrawalId = null;
+  $("withdrawForm").reset();
+  $("withdrawTitle").textContent = "Ta från sparandet";
+  $("withdrawDate").value = today();
+  $("deleteWithdraw").classList.add("hidden");
+  $("withdrawDialog").showModal();
+};
+
+$("cancelWithdraw").onclick = closeWithdraw;
+
+$("withdrawForm").onsubmit = event => {
+  event.preventDefault();
+
+  const name = $("withdrawName").value.trim();
+  const amount = Number($("withdrawAmount").value);
+  const date = $("withdrawDate").value;
+
+  if (
+    !name ||
+    !Number.isFinite(amount) ||
+    amount <= 0 ||
+    !parseDate(date)
+  ) {
+    alert("Kontrollera uttaget.");
+    return;
+  }
+
+  // Uttag kan komma från tidigare sparande.
+  // Därför begränsas de inte av periodens nya sparande.
+  if (editingWithdrawalId) {
+    const item = currentPeriod().withdrawals.find(
+      withdrawal => withdrawal.id === editingWithdrawalId
+    );
+    if (item) Object.assign(item, { name, amount, date });
+  } else {
+    currentPeriod().withdrawals.push({
+      id: uid(),
+      name,
+      amount,
+      date
+    });
+  }
+
+  save();
+  closeWithdraw();
+  render();
+};
+
+$("deleteWithdraw").onclick = () => {
+  if (
+    !editingWithdrawalId ||
+    !confirm("Vill du ta bort uttaget?")
+  ) {
+    return;
+  }
+
+  currentPeriod().withdrawals =
+    currentPeriod().withdrawals.filter(
+      item => item.id !== editingWithdrawalId
+    );
+
+  save();
+  closeWithdraw();
+  render();
+};
+
+// Löneperioder
 
 function navigate(direction) {
   const index = data.periods.findIndex(
@@ -835,7 +957,6 @@ $("settingsBtn").onclick = () => {
   $("payday").value = data.payday;
   $("periodStart").value = period.start;
   $("periodEnd").value = period.end;
-
   $("settingsDialog").showModal();
 };
 
@@ -871,14 +992,11 @@ $("saveSettings").onclick = () => {
   );
 
   if (overlap) {
-    alert(
-      "Datumen överlappar en annan löneperiod."
-    );
+    alert("Datumen överlappar en annan löneperiod.");
     return;
   }
 
   const period = currentPeriod();
-
   const old = {
     income: period.income,
     start: period.start,
@@ -890,10 +1008,7 @@ $("saveSettings").onclick = () => {
   period.start = start;
   period.end = end;
   data.payday = payday;
-
-  data.periods.sort(
-    (a, b) => a.start.localeCompare(b.start)
-  );
+  data.periods.sort((a, b) => a.start.localeCompare(b.start));
 
   try {
     save();
@@ -902,10 +1017,7 @@ $("saveSettings").onclick = () => {
     period.start = old.start;
     period.end = old.end;
     data.payday = old.payday;
-
-    data.periods.sort(
-      (a, b) => a.start.localeCompare(b.start)
-    );
+    data.periods.sort((a, b) => a.start.localeCompare(b.start));
     return;
   }
 
@@ -920,7 +1032,7 @@ $("deletePeriod").onclick = () => {
   }
 
   if (!confirm(
-    "Ta bort hela löneperioden och alla dess kostnader?"
+    "Ta bort hela löneperioden, dess kostnader och uttag?"
   )) {
     return;
   }
@@ -929,9 +1041,7 @@ $("deletePeriod").onclick = () => {
     period => period.id !== selectedId
   );
 
-  selectedId =
-    data.periods[data.periods.length - 1].id;
-
+  selectedId = data.periods[data.periods.length - 1].id;
   save();
   $("settingsDialog").close();
   render();
@@ -961,10 +1071,8 @@ $("newPeriodBtn").onclick = () => {
 
     checkbox.type = "checkbox";
     checkbox.value = item.id;
-
     checkbox.checked =
-      item.type === "fast" ||
-      item.type === "lan";
+      item.type === "fast" || item.type === "lan";
 
     label.append(
       checkbox,
@@ -989,19 +1097,13 @@ $("confirmPeriod").onclick = () => {
   const start = $("newStart").value;
   const end = $("newEnd").value;
 
-  if (
-    !parseDate(start) ||
-    !parseDate(end) ||
-    end < start
-  ) {
+  if (!parseDate(start) || !parseDate(end) || end < start) {
     alert("Kontrollera datumen.");
     return;
   }
 
   const overlap = data.periods.some(
-    period =>
-      start <= period.end &&
-      end >= period.start
+    period => start <= period.end && end >= period.start
   );
 
   if (overlap) {
@@ -1037,17 +1139,17 @@ $("confirmPeriod").onclick = () => {
     copied
   );
 
+  // Uttag kopieras aldrig till nästa löneperiod.
   data.periods.push(next);
-  data.periods.sort(
-    (a, b) => a.start.localeCompare(b.start)
-  );
+  data.periods.sort((a, b) => a.start.localeCompare(b.start));
 
   selectedId = next.id;
-
   save();
   $("periodDialog").close();
   render();
 };
+
+// Säkerhetskopiering
 
 $("exportBtn").onclick = () => {
   const blob = new Blob(
@@ -1094,9 +1196,7 @@ $("importFile").onchange = async event => {
     );
 
     data = imported;
-
-    selectedId =
-      data.periods[data.periods.length - 1].id;
+    selectedId = data.periods[data.periods.length - 1].id;
 
     $("settingsDialog").close();
     render();
@@ -1110,47 +1210,36 @@ $("importFile").onchange = async event => {
   }
 };
 
-/* Diagram */
+// Diagram
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 function svgElement(tag, attributes = {}) {
-  const element = document.createElementNS(
-    SVG_NS,
-    tag
-  );
+  const element = document.createElementNS(SVG_NS, tag);
 
-  Object.entries(attributes).forEach(
-    ([key, value]) => {
-      element.setAttribute(key, String(value));
-    }
-  );
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, String(value));
+  });
 
   return element;
 }
 
 function dailyExpenses() {
   const period = currentPeriod();
+  const count = daysBetween(period.start, period.end) + 1;
 
-  const count =
-    daysBetween(period.start, period.end) + 1;
+  const days = Array.from({ length: count }, (_, index) => ({
+    date: addDays(period.start, index),
+    amount: 0,
+    items: []
+  }));
 
-  const days = Array.from(
-    { length: count },
-    (_, index) => ({
-      date: addDays(period.start, index),
-      amount: 0,
-      items: []
-    })
-  );
-
-  const byDate = new Map(
-    days.map(day => [day.date, day])
-  );
-
+  const byDate = new Map(days.map(day => [day.date, day]));
   const undated = [];
   const outside = [];
 
+  // Endast faktiska betalningar.
+  // Uttag från sparandet ingår inte här.
   period.expenses.forEach(item => {
     if (!item.paid) return;
 
@@ -1181,20 +1270,14 @@ function drawChart(svg, days, large = false) {
   const top = large ? 15 : 5;
   const bottom = large ? 154 : 61;
 
-  const max = Math.max(
-    0,
-    ...days.map(day => day.amount)
-  );
-
+  const max = Math.max(0, ...days.map(day => day.amount));
   const usableWidth = right - left;
   const usableHeight = bottom - top;
 
   function position(index, amount) {
     const x = days.length <= 1
       ? left + usableWidth / 2
-      : left +
-        index / (days.length - 1) *
-        usableWidth;
+      : left + index / (days.length - 1) * usableWidth;
 
     const y = max > 0
       ? bottom - amount / max * usableHeight
@@ -1206,8 +1289,7 @@ function drawChart(svg, days, large = false) {
   const gridLines = large ? 4 : 3;
 
   for (let i = 0; i < gridLines; i++) {
-    const y = top +
-      i / (gridLines - 1) * usableHeight;
+    const y = top + i / (gridLines - 1) * usableHeight;
 
     svg.append(
       svgElement("line", {
@@ -1222,7 +1304,7 @@ function drawChart(svg, days, large = false) {
     );
   }
 
-  if (days.length === 0) return;
+  if (!days.length) return;
 
   const points = days.map(
     (day, index) => position(index, day.amount)
@@ -1279,24 +1361,23 @@ function drawChart(svg, days, large = false) {
   );
 
   if (!large) {
-    const peakDays = days
+    days
       .map((day, index) => ({ ...day, index }))
       .filter(day => day.amount > 0)
       .sort((a, b) => b.amount - a.amount)
-      .slice(0, 4);
+      .slice(0, 4)
+      .forEach(day => {
+        const point = points[day.index];
 
-    peakDays.forEach(day => {
-      const point = points[day.index];
-
-      svg.append(
-        svgElement("circle", {
-          cx: point.x,
-          cy: point.y,
-          r: 3.5,
-          fill: "#e5a267"
-        })
-      );
-    });
+        svg.append(
+          svgElement("circle", {
+            cx: point.x,
+            cy: point.y,
+            r: 3.5,
+            fill: "#e5a267"
+          })
+        );
+      });
 
     return;
   }
@@ -1309,38 +1390,31 @@ function drawChart(svg, days, large = false) {
     const group = svgElement("g", {
       role: "button",
       tabindex: "0",
-      "aria-label":
-        longDate(day.date) + ", " + money(day.amount),
+      "aria-label": longDate(day.date) + ", " + money(day.amount),
       style: "cursor:pointer"
     });
 
-    const hitArea = svgElement("circle", {
-      cx: point.x,
-      cy: point.y,
-      r: 12,
-      fill: "transparent"
-    });
+    group.append(
+      svgElement("circle", {
+        cx: point.x,
+        cy: point.y,
+        r: 12,
+        fill: "transparent"
+      }),
+      svgElement("circle", {
+        cx: point.x,
+        cy: point.y,
+        r: 4,
+        fill: "#e5a267",
+        stroke: "#263438",
+        "stroke-width": 1.5
+      })
+    );
 
-    const dot = svgElement("circle", {
-      cx: point.x,
-      cy: point.y,
-      r: 4,
-      fill: "#e5a267",
-      stroke: "#263438",
-      "stroke-width": 1.5
-    });
-
-    group.append(hitArea, dot);
-
-    group.addEventListener("click", () => {
-      showChartDay(day);
-    });
+    group.addEventListener("click", () => showChartDay(day));
 
     group.addEventListener("keydown", event => {
-      if (
-        event.key === "Enter" ||
-        event.key === " "
-      ) {
+      if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         showChartDay(day);
       }
@@ -1354,11 +1428,7 @@ function showChartDay(day) {
   const container = $("chartDetails");
   container.replaceChildren();
 
-  const heading = el(
-    "div",
-    "",
-    "chart-detail-heading"
-  );
+  const heading = el("div", "", "chart-detail-heading");
 
   heading.append(
     el("strong", longDate(day.date)),
@@ -1368,11 +1438,7 @@ function showChartDay(day) {
   container.append(heading);
 
   day.items.forEach(item => {
-    const row = el(
-      "div",
-      "",
-      "chart-detail-item"
-    );
+    const row = el("div", "", "chart-detail-item");
 
     row.append(
       el("span", item.name),
@@ -1387,11 +1453,8 @@ function renderMiniChart() {
   const period = currentPeriod();
   const chart = dailyExpenses();
 
-  $("miniStart").textContent =
-    formatDate(period.start);
-
-  $("miniEnd").textContent =
-    formatDate(period.end);
+  $("miniStart").textContent = formatDate(period.start);
+  $("miniEnd").textContent = formatDate(period.end);
 
   drawChart($("miniChart"), chart.days, false);
 }
@@ -1400,27 +1463,17 @@ function renderLargeChart() {
   const period = currentPeriod();
   const chart = dailyExpenses();
 
-  const total = chart.days.reduce(
-    (sum, day) => sum + day.amount,
-    0
-  );
-
+  const total = sumAmounts(chart.days);
   const biggest = Math.max(
     0,
     ...chart.days.map(day => day.amount)
   );
 
   $("chartPeriod").textContent =
-    longDate(period.start) +
-    " – " +
-    longDate(period.end);
+    longDate(period.start) + " – " + longDate(period.end);
 
-  $("chartStart").textContent =
-    formatDate(period.start);
-
-  $("chartEnd").textContent =
-    formatDate(period.end);
-
+  $("chartStart").textContent = formatDate(period.start);
+  $("chartEnd").textContent = formatDate(period.end);
   $("chartTotal").textContent = money(total);
   $("chartMax").textContent = money(biggest);
 
@@ -1429,25 +1482,21 @@ function renderLargeChart() {
   const details = $("chartDetails");
   details.replaceChildren();
 
-  const paidDays = chart.days.filter(
-    day => day.amount > 0
-  );
+  const paidDays = chart.days.filter(day => day.amount > 0);
 
-  if (paidDays.length === 0) {
+  if (!paidDays.length) {
     details.append(
       el(
         "p",
-        "Inga daterade betalningar finns " +
-        "för den här löneperioden ännu.",
+        "Inga daterade betalningar finns för den här " +
+          "löneperioden ännu.",
         "empty"
       )
     );
   } else {
     const biggestDay = paidDays.reduce(
       (largest, day) =>
-        day.amount > largest.amount
-          ? day
-          : largest
+        day.amount > largest.amount ? day : largest
     );
 
     showChartDay(biggestDay);
@@ -1455,37 +1504,25 @@ function renderLargeChart() {
 
   const messages = [];
 
-  if (chart.undated.length > 0) {
-    const totalUndated = chart.undated.reduce(
-      (sum, item) => sum + item.amount,
-      0
-    );
-
+  if (chart.undated.length) {
     messages.push(
-      chart.undated.length +
-      " äldre betalningar (" +
-      money(totalUndated) +
-      ") saknar betalningsdatum " +
-      "och visas därför inte i diagrammet."
+      chart.undated.length + " äldre betalningar (" +
+      money(sumAmounts(chart.undated)) +
+      ") saknar betalningsdatum och visas inte i diagrammet."
     );
   }
 
-  if (chart.outside.length > 0) {
+  if (chart.outside.length) {
     messages.push(
       chart.outside.length +
-      " betalningar har datum utanför " +
-      "den valda löneperioden och visas " +
-      "inte i det här diagrammet."
+      " betalningar har datum utanför den valda " +
+      "löneperioden och visas inte i diagrammet."
     );
   }
 
-  if (messages.length > 0) {
+  if (messages.length) {
     details.append(
-      el(
-        "div",
-        messages.join(" "),
-        "chart-no-date"
-      )
+      el("div", messages.join(" "), "chart-no-date")
     );
   }
 }
