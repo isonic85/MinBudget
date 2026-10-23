@@ -3,7 +3,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#17272b">
   <title>MinBudget</title>
   <link rel="stylesheet" href="style.css">
@@ -90,7 +90,7 @@
       + Ny löneperiod
     </button>
 
-    <footer>MinBudget 4.4</footer>
+    <footer>MinBudget 4.5</footer>
   </main>
 
   <dialog id="expenseDialog">
@@ -120,9 +120,7 @@
         <option value="sparande">Sparande</option>
       </select>
 
-      <label for="expenseDue">
-        Förfallodatum (valfritt)
-      </label>
+      <label for="expenseDue">Förfallodatum (valfritt)</label>
       <input id="expenseDue" type="date">
 
       <label class="check-row">
@@ -131,9 +129,7 @@
       </label>
 
       <div id="paidDateGroup" class="hidden">
-        <label for="expensePaidDate">
-          Betald datum
-        </label>
+        <label for="expensePaidDate">Betald datum</label>
         <input id="expensePaidDate" type="date">
         <p class="hint">
           Fylls i automatiskt när du markerar betald.
@@ -141,9 +137,7 @@
         </p>
       </div>
 
-      <button type="submit" class="primary-btn">
-        Spara
-      </button>
+      <button type="submit" class="primary-btn">Spara</button>
       <button type="button" id="cancelExpense"
         class="secondary-btn">Avbryt</button>
       <button type="button" id="deleteExpense"
@@ -156,8 +150,7 @@
       <h2>⚙️ Inställningar</h2>
 
       <label for="income">Lön efter skatt (kr)</label>
-      <input id="income" type="number"
-        min="0" step="0.01">
+      <input id="income" type="number" min="0" step="0.01">
 
       <label for="payday">Vanlig lönedag</label>
       <select id="payday"></select>
@@ -188,9 +181,7 @@
         Ladda ner säkerhetskopia
       </button>
 
-      <label for="importFile">
-        Återställ säkerhetskopia
-      </label>
+      <label for="importFile">Återställ säkerhetskopia</label>
       <input id="importFile" type="file"
         accept=".json,application/json">
 
@@ -207,9 +198,7 @@
   <dialog id="periodDialog">
     <div class="dialog-body">
       <h2>Ny löneperiod</h2>
-      <p class="hint">
-        Välj vilka kostnader som ska följa med.
-      </p>
+      <p class="hint">Välj vilka kostnader som ska följa med.</p>
 
       <label for="newStart">Nästa lönedatum</label>
       <input id="newStart" type="date">
@@ -228,6 +217,7 @@
       <button id="confirmPeriod" class="primary-btn">
         Skapa löneperiod
       </button>
+
       <button id="cancelPeriod" class="secondary-btn">
         Avbryt
       </button>
