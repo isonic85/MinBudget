@@ -14,9 +14,7 @@
   --danger: #ff9999;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
   width: 100%;
@@ -31,22 +29,14 @@ body {
   min-height: 100vh;
   overflow-x: clip;
   overscroll-behavior-x: none;
-  touch-action: pan-y pinch-zoom;
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-button,
-input,
-select {
-  font: inherit;
-}
-
-button {
-  -webkit-tap-highlight-color: transparent;
-}
+button, input, select { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
 
 .app {
   width: 100%;
@@ -112,9 +102,7 @@ button {
   text-align: center;
 }
 
-.period-nav > div {
-  min-width: 0;
-}
+.period-nav > div { min-width: 0; }
 
 .period-nav h2 {
   margin: 0;
@@ -169,9 +157,7 @@ button {
   overflow-wrap: anywhere;
 }
 
-.big-amount.negative {
-  color: var(--danger);
-}
+.big-amount.negative { color: var(--danger); }
 
 .hint {
   font-size: 11px;
@@ -196,15 +182,15 @@ button {
   font-size: 12px;
 }
 
-.payment-summary span {
-  color: #b7cfca;
-}
+.payment-summary span { color: #b7cfca; }
 
 .payment-summary strong {
   color: #fff;
   white-space: nowrap;
   font-size: 12px;
 }
+
+.payment-summary #withdrawalTotal { color: var(--danger); }
 
 .section-heading {
   display: flex;
@@ -224,13 +210,8 @@ button {
   font-size: 12px;
 }
 
-.category {
-  margin-bottom: 17px;
-}
-
-.category:last-child {
-  margin-bottom: 0;
-}
+.category { margin-bottom: 17px; }
+.category:last-child { margin-bottom: 0; }
 
 .category-toggle {
   background: transparent;
@@ -260,9 +241,7 @@ button {
   flex-shrink: 0;
 }
 
-.category-title strong {
-  font-size: 13px;
-}
+.category-title strong { font-size: 13px; }
 
 .category-title small {
   color: var(--muted);
@@ -322,17 +301,10 @@ button {
   overflow-wrap: anywhere;
 }
 
-.category-number.remaining {
-  text-align: right;
-}
+.category-number.remaining { text-align: right; }
 
-.category-number.remaining strong {
-  color: #a4e4c4;
-}
-
-.category-number.over-budget strong {
-  color: var(--danger);
-}
+.category-number.remaining strong { color: #a4e4c4; }
+.category-number.over-budget strong { color: var(--danger); }
 
 .category-budget-hint {
   color: var(--muted);
@@ -375,9 +347,7 @@ button {
   padding: 9px 0;
 }
 
-.category-item:last-child {
-  border-bottom: 0;
-}
+.category-item:last-child { border-bottom: 0; }
 
 .item-info {
   min-width: 0;
@@ -454,9 +424,7 @@ button {
   border: 1px solid #499d92;
 }
 
-.primary-btn:hover {
-  background: #43978c;
-}
+.primary-btn:hover { background: #43978c; }
 
 .secondary-btn {
   background: #263c3e;
@@ -464,9 +432,7 @@ button {
   border: 1px solid #4c817b;
 }
 
-.secondary-btn:hover {
-  background: #30494b;
-}
+.secondary-btn:hover { background: #30494b; }
 
 .danger-btn {
   background: #452b30;
@@ -474,9 +440,7 @@ button {
   border: 1px solid #845157;
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
 
 footer {
   text-align: center;
@@ -500,9 +464,7 @@ dialog {
   overscroll-behavior-x: contain;
 }
 
-dialog::backdrop {
-  background: #071619c9;
-}
+dialog::backdrop { background: #071619c9; }
 
 .dialog-body {
   padding: 16px;
@@ -526,8 +488,7 @@ label {
   margin: 10px 0 5px;
 }
 
-input,
-select {
+input, select {
   display: block;
   width: 100%;
   min-width: 0;
@@ -541,9 +502,7 @@ select {
   font-size: 16px;
 }
 
-input::placeholder {
-  color: #90a6a1;
-}
+input::placeholder { color: #90a6a1; }
 
 input:focus,
 select:focus,
@@ -552,9 +511,7 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-input[type="date"] {
-  color-scheme: dark;
-}
+input[type="date"] { color-scheme: dark; }
 
 input[type="file"] {
   font-size: 12px;
@@ -586,7 +543,24 @@ input[type="file"] {
   padding: 10px 0;
 }
 
-/* Kompakt diagram */
+.savings-positive { color: #80c99b !important; }
+.savings-negative { color: #ff9999 !important; }
+
+.savings-note {
+  margin: 7px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.withdrawal-item .item-info strong,
+.withdrawal-item .item-actions > strong {
+  color: var(--danger);
+}
+
+#withdrawBtn {
+  border-color: #5b655f;
+  color: #d8e9df;
+}
 
 .mini-chart-section {
   margin-top: 11px;
@@ -638,9 +612,7 @@ input[type="file"] {
   margin-top: 2px;
 }
 
-.chart-dialog {
-  width: min(94%, 550px);
-}
+.chart-dialog { width: min(94%, 550px); }
 
 .chart-dialog-heading {
   display: flex;
@@ -718,9 +690,7 @@ input[type="file"] {
   padding: 0 7px;
 }
 
-.chart-details {
-  margin-top: 10px;
-}
+.chart-details { margin-top: 10px; }
 
 .chart-detail-heading {
   display: flex;
@@ -765,33 +735,21 @@ input[type="file"] {
 }
 
 @media (max-width: 430px) {
-  .app {
-    padding: 10px 10px 20px;
-  }
+  .app { padding: 10px 10px 20px; }
 
   .card {
     padding: 13px;
     margin-bottom: 10px;
   }
 
-  .category-item {
-    flex-wrap: wrap;
-  }
+  .category-item { flex-wrap: wrap; }
 
   .item-actions {
     width: 100%;
     justify-content: flex-end;
   }
 
-  .category-number strong {
-    font-size: 14px;
-  }
-
-  .chart-stats strong {
-    font-size: 14px;
-  }
-
-  .mini-chart-title strong {
-    font-size: 11px;
-  }
+  .category-number strong { font-size: 14px; }
+  .chart-stats strong { font-size: 14px; }
+  .mini-chart-title strong { font-size: 11px; }
 }
