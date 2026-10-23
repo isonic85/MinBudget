@@ -5,21 +5,9 @@ const STORAGE_KEY = "minbudget_v4";
 const $ = id => document.getElementById(id);
 
 const categoryInfo = {
-  behov: {
-    name: "Behov",
-    percent: 50,
-    color: "#65b8af"
-  },
-  onskemal: {
-    name: "Tänk efter",
-    percent: 30,
-    color: "#e5a267"
-  },
-  framtid: {
-    name: "Framtid",
-    percent: 20,
-    color: "#80c99b"
-  }
+  behov: { name: "Behov", percent: 50, color: "#65b8af" },
+  onskemal: { name: "Tänk efter", percent: 30, color: "#e5a267" },
+  framtid: { name: "Framtid", percent: 20, color: "#80c99b" }
 };
 
 const typeNames = {
@@ -54,22 +42,16 @@ function today() {
 }
 
 function parseDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) {
-    return null;
-  }
-
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return null;
   const date = new Date(value + "T12:00:00");
-
-  return !Number.isNaN(date.getTime()) &&
-    dateString(date) === value
-      ? date
-      : null;
+  return !Number.isNaN(date.getTime()) && dateString(date) === value
+    ? date
+    : null;
 }
 
 function addDays(value, count) {
   const date = parseDate(value);
   if (!date) return null;
-
   date.setDate(date.getDate() + count);
   return dateString(date);
 }
@@ -77,35 +59,24 @@ function addDays(value, count) {
 function daysBetween(start, end) {
   const a = parseDate(start);
   const b = parseDate(end);
-
   if (!a || !b) return 0;
-
-  return Math.round(
-    (b.getTime() - a.getTime()) / 86400000
-  );
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
 function paydayInMonth(year, month, day) {
   const lastDay = new Date(year, month, 0).getDate();
-
   return dateString(
-    new Date(
-      year,
-      month - 1,
-      Math.min(day, lastDay)
-    )
+    new Date(year, month - 1, Math.min(day, lastDay))
   );
 }
 
 function nextPayday(start, payday) {
   const date = parseDate(start);
-
   const next = new Date(
     date.getFullYear(),
     date.getMonth() + 1,
     1
   );
-
   return paydayInMonth(
     next.getFullYear(),
     next.getMonth() + 1,
@@ -128,7 +99,6 @@ function periodAround(date, payday) {
       current.getMonth() - 1,
       1
     );
-
     start = paydayInMonth(
       previous.getFullYear(),
       previous.getMonth() + 1,
@@ -138,26 +108,12 @@ function periodAround(date, payday) {
 
   return {
     start,
-    end: addDays(
-      nextPayday(start, payday),
-      -1
-    )
+    end: addDays(nextPayday(start, payday), -1)
   };
 }
 
-function makePeriod(
-  start,
-  end,
-  income = 0,
-  expenses = []
-) {
-  return {
-    id: uid(),
-    start,
-    end,
-    income,
-    expenses
-  };
+function makePeriod(start, end, income = 0, expenses = []) {
+  return { id: uid(), start, end, income, expenses };
 }
 
 function normalizeExpense(item) {
@@ -207,16 +163,12 @@ function validateData(raw) {
         !categoryInfo[expense.category] ||
         !typeNames[expense.type] ||
         (expense.due && !parseDate(expense.due)) ||
-        (expense.paidDate &&
-          !parseDate(expense.paidDate))
+        (expense.paidDate && !parseDate(expense.paidDate))
       ) {
         throw new Error("Ogiltig kostnad");
       }
 
-      if (!expense.paid) {
-        expense.paidDate = "";
-      }
-
+      if (!expense.paid) expense.paidDate = "";
       return expense;
     });
 
@@ -229,9 +181,7 @@ function validateData(raw) {
     };
   });
 
-  periods.sort(
-    (a, b) => a.start.localeCompare(b.start)
-  );
+  periods.sort((a, b) => a.start.localeCompare(b.start));
 
   for (let i = 1; i < periods.length; i++) {
     if (periods[i].start <= periods[i - 1].end) {
@@ -240,23 +190,17 @@ function validateData(raw) {
   }
 
   const ids = periods.map(period => period.id);
-
   if (new Set(ids).size !== ids.length) {
     throw new Error("Dubbla period-ID");
   }
 
-  return {
-    payday: raw.payday,
-    periods
-  };
+  return { payday: raw.payday, periods };
 }
 
 function migrateOldData() {
   const v3 = localStorage.getItem("minbudget_v3");
 
-  if (v3) {
-    return validateData(JSON.parse(v3));
-  }
+  if (v3) return validateData(JSON.parse(v3));
 
   const v2 = localStorage.getItem("minbudget_v2");
 
@@ -281,12 +225,8 @@ function migrateOldData() {
           throw new Error("Ogiltig gammal månad");
         }
 
-        const [year, number] =
-          month.split("-").map(Number);
-
-        const end = dateString(
-          new Date(year, number, 0)
-        );
+        const [year, number] = month.split("-").map(Number);
+        const end = dateString(new Date(year, number, 0));
 
         return makePeriod(
           month + "-01",
@@ -302,10 +242,7 @@ function migrateOldData() {
       }
     );
 
-    return validateData({
-      payday: 20,
-      periods
-    });
+    return validateData({ payday: 20, periods });
   }
 
   const v1 = localStorage.getItem("minbudget_v1");
@@ -337,18 +274,13 @@ function migrateOldData() {
     });
   }
 
-  return {
-    payday: 20,
-    periods: []
-  };
+  return { payday: 20, periods: [] };
 }
 
 function loadData() {
   const saved = localStorage.getItem(STORAGE_KEY);
 
-  if (saved) {
-    return validateData(JSON.parse(saved));
-  }
+  if (saved) return validateData(JSON.parse(saved));
 
   const migrated = migrateOldData();
 
@@ -366,13 +298,11 @@ try {
   data = loadData();
 } catch (error) {
   console.error(error);
-
   alert(
     "Kunde inte läsa dina tidigare uppgifter. " +
     "Inga gamla uppgifter har raderats. " +
     "Kontrollera din säkerhetskopia."
   );
-
   throw error;
 }
 
@@ -390,11 +320,7 @@ function save() {
 
 if (data.periods.length === 0) {
   const dates = periodAround(today(), data.payday);
-
-  data.periods.push(
-    makePeriod(dates.start, dates.end)
-  );
-
+  data.periods.push(makePeriod(dates.start, dates.end));
   save();
 }
 
@@ -422,11 +348,7 @@ function currentPeriod() {
 function el(tag, text = "", className = "") {
   const element = document.createElement(tag);
   element.textContent = text;
-
-  if (className) {
-    element.className = className;
-  }
-
+  if (className) element.className = className;
   return element;
 }
 
@@ -462,10 +384,7 @@ function totals() {
 
   const paid = period.expenses
     .filter(item => item.paid)
-    .reduce(
-      (sum, item) => sum + item.amount,
-      0
-    );
+    .reduce((sum, item) => sum + item.amount, 0);
 
   return {
     total,
@@ -479,8 +398,7 @@ function renderOverview() {
   const period = currentPeriod();
   const amounts = totals();
 
-  $("periodName").textContent =
-    periodName(period.start);
+  $("periodName").textContent = periodName(period.start);
 
   $("periodDates").textContent =
     formatDate(period.start) +
@@ -489,26 +407,21 @@ function renderOverview() {
     " " +
     parseDate(period.end).getFullYear();
 
-  $("available").textContent =
-    money(amounts.available);
+  $("available").textContent = money(amounts.available);
 
   $("available").classList.toggle(
     "negative",
     amounts.available < 0
   );
 
-  $("paidTotal").textContent =
-    money(amounts.paid);
-
-  $("unpaidTotal").textContent =
-    money(amounts.unpaid);
+  $("paidTotal").textContent = money(amounts.paid);
+  $("unpaidTotal").textContent = money(amounts.unpaid);
 
   const index = data.periods.findIndex(
     period => period.id === selectedId
   );
 
   $("prevPeriod").disabled = index <= 0;
-
   $("nextPeriod").disabled =
     index >= data.periods.length - 1;
 }
@@ -545,10 +458,7 @@ function renderCategories() {
 
   const period = currentPeriod();
 
-  for (
-    const [key, category]
-    of Object.entries(categoryInfo)
-  ) {
+  for (const [key, category] of Object.entries(categoryInfo)) {
     const items = period.expenses.filter(
       item => item.category === key
     );
@@ -560,10 +470,7 @@ function renderCategories() {
 
     const spent = items
       .filter(item => item.paid)
-      .reduce(
-        (sum, item) => sum + item.amount,
-        0
-      );
+      .reduce((sum, item) => sum + item.amount, 0);
 
     const unpaid = total - spent;
 
@@ -576,13 +483,8 @@ function renderCategories() {
       ? Math.min(100, total / budget * 100)
       : total > 0 ? 100 : 0;
 
-    const wrapper = el(
-      "div", "", "category"
-    );
-
-    const toggle = el(
-      "button", "", "category-toggle"
-    );
+    const wrapper = el("div", "", "category");
+    const toggle = el("button", "", "category-toggle");
 
     toggle.type = "button";
     toggle.setAttribute(
@@ -590,10 +492,7 @@ function renderCategories() {
       String(expanded[key])
     );
 
-    const title = el(
-      "div", "", "category-title"
-    );
-
+    const title = el("div", "", "category-title");
     const dot = el("span", "", "dot");
     dot.style.background = category.color;
 
@@ -603,9 +502,7 @@ function renderCategories() {
       el("small", category.percent + " %")
     );
 
-    const value = el(
-      "div", "", "category-value"
-    );
+    const value = el("div", "", "category-value");
 
     value.append(
       el(
@@ -622,26 +519,15 @@ function renderCategories() {
       renderCategories();
     };
 
-    const progress = el(
-      "div", "", "progress"
-    );
-
-    const fill = el(
-      "div", "", "progress-fill"
-    );
+    const progress = el("div", "", "progress");
+    const fill = el("div", "", "progress-fill");
 
     fill.style.width = percentage + "%";
     fill.style.background = category.color;
-
     progress.append(fill);
 
-    const summary = el(
-      "div", "", "category-summary"
-    );
-
-    const spentBox = el(
-      "div", "", "category-number"
-    );
+    const summary = el("div", "", "category-summary");
+    const spentBox = el("div", "", "category-number");
 
     spentBox.append(
       el("small", "Spenderat"),
@@ -665,15 +551,10 @@ function renderCategories() {
     );
 
     if (remaining < 0) {
-      remainingBox.classList.add(
-        "over-budget"
-      );
+      remainingBox.classList.add("over-budget");
     }
 
-    summary.append(
-      spentBox,
-      remainingBox
-    );
+    summary.append(spentBox, remainingBox);
 
     const budgetHint = el(
       "p",
@@ -702,9 +583,7 @@ function renderCategories() {
     }
 
     if (expanded[key]) {
-      const detail = el(
-        "div", "", "category-detail"
-      );
+      const detail = el("div", "", "category-detail");
 
       if (unpaid > 0) {
         detail.append(
@@ -718,22 +597,13 @@ function renderCategories() {
 
       if (items.length === 0) {
         detail.append(
-          el(
-            "p",
-            "Inga kostnader ännu.",
-            "empty"
-          )
+          el("p", "Inga kostnader ännu.", "empty")
         );
       }
 
       items.forEach(item => {
-        const row = el(
-          "div", "", "category-item"
-        );
-
-        const info = el(
-          "div", "", "item-info"
-        );
+        const row = el("div", "", "category-item");
+        const info = el("div", "", "item-info");
 
         let description = typeNames[item.type];
 
@@ -752,25 +622,19 @@ function renderCategories() {
           el("small", description)
         );
 
-        const actions = el(
-          "div", "", "item-actions"
-        );
+        const actions = el("div", "", "item-actions");
 
         const paidButton = el(
           "button",
-          item.paid
-            ? "✓ Betald"
-            : "○ Obetald",
-          "paid-toggle" +
-          (item.paid ? " is-paid" : "")
+          item.paid ? "✓ Betald" : "○ Obetald",
+          "paid-toggle" + (item.paid ? " is-paid" : "")
         );
 
         paidButton.type = "button";
 
         paidButton.setAttribute(
           "aria-label",
-          "Ändra betalningsstatus för " +
-          item.name
+          "Ändra betalningsstatus för " + item.name
         );
 
         paidButton.onclick = () => {
@@ -787,7 +651,9 @@ function renderCategories() {
         };
 
         const editButton = el(
-          "button", "✎", "edit-btn"
+          "button",
+          "✎",
+          "edit-btn"
         );
 
         editButton.type = "button";
@@ -797,8 +663,7 @@ function renderCategories() {
           "Redigera " + item.name
         );
 
-        editButton.onclick = () =>
-          editExpense(item.id);
+        editButton.onclick = () => editExpense(item.id);
 
         actions.append(
           el("strong", money(item.amount)),
@@ -845,29 +710,19 @@ $("expensePaid").onchange = () => {
 function closeExpense() {
   editingId = null;
   $("expenseForm").reset();
-
-  $("deleteExpense").classList.add(
-    "hidden"
-  );
-
-  $("paidDateGroup").classList.add(
-    "hidden"
-  );
-
+  $("deleteExpense").classList.add("hidden");
+  $("paidDateGroup").classList.add("hidden");
   $("expenseDialog").close();
 }
 
 $("addBtn").onclick = () => {
   editingId = null;
-
   $("expenseForm").reset();
 
   $("expenseDialogTitle").textContent =
     "Lägg till kostnad";
 
-  $("deleteExpense").classList.add(
-    "hidden"
-  );
+  $("deleteExpense").classList.add("hidden");
 
   updatePaidDateField(false);
   $("expenseDialog").showModal();
@@ -878,33 +733,18 @@ $("cancelExpense").onclick = closeExpense;
 $("expenseForm").onsubmit = event => {
   event.preventDefault();
 
-  const name =
-    $("expenseName").value.trim();
-
-  const amount =
-    Number($("expenseAmount").value);
-
-  const category =
-    $("expenseCategory").value;
-
-  const type =
-    $("expenseType").value;
-
-  const due =
-    $("expenseDue").value;
-
-  const paid =
-    $("expensePaid").checked;
+  const name = $("expenseName").value.trim();
+  const amount = Number($("expenseAmount").value);
+  const category = $("expenseCategory").value;
+  const type = $("expenseType").value;
+  const due = $("expenseDue").value;
+  const paid = $("expensePaid").checked;
 
   let paidDate = paid
     ? $("expensePaidDate").value
     : "";
 
-  if (
-    paid &&
-    !paidDate &&
-    !editingId
-  ) {
+  if (paid && !paidDate && !editingId) {
     paidDate = today();
   }
 
@@ -932,14 +772,11 @@ $("expenseForm").onsubmit = event => {
   };
 
   if (editingId) {
-    const item = currentPeriod()
-      .expenses.find(
-        expense => expense.id === editingId
-      );
+    const item = currentPeriod().expenses.find(
+      expense => expense.id === editingId
+    );
 
-    if (item) {
-      Object.assign(item, values);
-    }
+    if (item) Object.assign(item, values);
   } else {
     currentPeriod().expenses.push({
       id: uid(),
@@ -975,27 +812,18 @@ function navigate(direction) {
     period => period.id === selectedId
   );
 
-  const next =
-    data.periods[index + direction];
-
+  const next = data.periods[index + direction];
   if (!next) return;
 
   selectedId = next.id;
   render();
 }
 
-$("prevPeriod").onclick = () =>
-  navigate(-1);
-
-$("nextPeriod").onclick = () =>
-  navigate(1);
+$("prevPeriod").onclick = () => navigate(-1);
+$("nextPeriod").onclick = () => navigate(1);
 
 for (let day = 1; day <= 31; day++) {
-  const option = el(
-    "option",
-    "Den " + day + ":e"
-  );
-
+  const option = el("option", "Den " + day + ":e");
   option.value = day;
   $("payday").append(option);
 }
@@ -1016,19 +844,10 @@ $("closeSettings").onclick = () => {
 };
 
 $("saveSettings").onclick = () => {
-  const income = Number(
-    $("income").value
-  );
-
-  const payday = Number(
-    $("payday").value
-  );
-
-  const start =
-    $("periodStart").value;
-
-  const end =
-    $("periodEnd").value;
+  const income = Number($("income").value);
+  const payday = Number($("payday").value);
+  const start = $("periodStart").value;
+  const end = $("periodEnd").value;
 
   if (
     !Number.isFinite(income) ||
@@ -1087,7 +906,6 @@ $("saveSettings").onclick = () => {
     data.periods.sort(
       (a, b) => a.start.localeCompare(b.start)
     );
-
     return;
   }
 
@@ -1097,15 +915,12 @@ $("saveSettings").onclick = () => {
 
 $("deletePeriod").onclick = () => {
   if (data.periods.length <= 1) {
-    alert(
-      "Du måste ha minst en löneperiod."
-    );
+    alert("Du måste ha minst en löneperiod.");
     return;
   }
 
   if (!confirm(
-    "Ta bort hela löneperioden " +
-    "och alla dess kostnader?"
+    "Ta bort hela löneperioden och alla dess kostnader?"
   )) {
     return;
   }
@@ -1115,9 +930,7 @@ $("deletePeriod").onclick = () => {
   );
 
   selectedId =
-    data.periods[
-      data.periods.length - 1
-    ].id;
+    data.periods[data.periods.length - 1].id;
 
   save();
   $("settingsDialog").close();
@@ -1136,23 +949,15 @@ function suggestNewDates(start) {
 $("newPeriodBtn").onclick = () => {
   const source = currentPeriod();
 
-  $("newStart").value =
-    addDays(source.end, 1);
-
-  suggestNewDates(
-    $("newStart").value
-  );
+  $("newStart").value = addDays(source.end, 1);
+  suggestNewDates($("newStart").value);
 
   $("copyIncome").checked = true;
   $("copyList").replaceChildren();
 
   source.expenses.forEach(item => {
-    const label = el(
-      "label", "", "check-row"
-    );
-
-    const checkbox =
-      document.createElement("input");
+    const label = el("label", "", "check-row");
+    const checkbox = document.createElement("input");
 
     checkbox.type = "checkbox";
     checkbox.value = item.id;
@@ -1163,11 +968,7 @@ $("newPeriodBtn").onclick = () => {
 
     label.append(
       checkbox,
-      el(
-        "span",
-        item.name + " – " +
-        money(item.amount)
-      )
+      el("span", item.name + " – " + money(item.amount))
     );
 
     $("copyList").append(label);
@@ -1177,9 +978,7 @@ $("newPeriodBtn").onclick = () => {
 };
 
 $("newStart").onchange = () => {
-  suggestNewDates(
-    $("newStart").value
-  );
+  suggestNewDates($("newStart").value);
 };
 
 $("cancelPeriod").onclick = () => {
@@ -1187,11 +986,8 @@ $("cancelPeriod").onclick = () => {
 };
 
 $("confirmPeriod").onclick = () => {
-  const start =
-    $("newStart").value;
-
-  const end =
-    $("newEnd").value;
+  const start = $("newStart").value;
+  const end = $("newEnd").value;
 
   if (
     !parseDate(start) ||
@@ -1210,8 +1006,7 @@ $("confirmPeriod").onclick = () => {
 
   if (overlap) {
     alert(
-      "Den nya perioden överlappar " +
-      "en befintlig period. " +
+      "Den nya perioden överlappar en befintlig period. " +
       "Justera datumen först."
     );
     return;
@@ -1238,14 +1033,11 @@ $("confirmPeriod").onclick = () => {
   const next = makePeriod(
     start,
     end,
-    $("copyIncome").checked
-      ? source.income
-      : 0,
+    $("copyIncome").checked ? source.income : 0,
     copied
   );
 
   data.periods.push(next);
-
   data.periods.sort(
     (a, b) => a.start.localeCompare(b.start)
   );
@@ -1260,35 +1052,24 @@ $("confirmPeriod").onclick = () => {
 $("exportBtn").onclick = () => {
   const blob = new Blob(
     [JSON.stringify(data, null, 2)],
-    {
-      type: "application/json"
-    }
+    { type: "application/json" }
   );
 
-  const url =
-    URL.createObjectURL(blob);
-
-  const link =
-    document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
 
   link.href = url;
-
-  link.download =
-    "minbudget-" + today() + ".json";
+  link.download = "minbudget-" + today() + ".json";
 
   document.body.append(link);
   link.click();
   link.remove();
 
-  setTimeout(
-    () => URL.revokeObjectURL(url),
-    1000
-  );
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 $("importFile").onchange = async event => {
   const file = event.target.files[0];
-
   if (!file) return;
 
   try {
@@ -1297,14 +1078,12 @@ $("importFile").onchange = async event => {
     );
 
     if (!imported.periods.length) {
-      throw new Error(
-        "Tom säkerhetskopia"
-      );
+      throw new Error("Tom säkerhetskopia");
     }
 
     if (!confirm(
-      "Importen ersätter dina nuvarande " +
-      "uppgifter. Vill du fortsätta?"
+      "Importen ersätter dina nuvarande uppgifter. " +
+      "Vill du fortsätta?"
     )) {
       return;
     }
@@ -1317,28 +1096,21 @@ $("importFile").onchange = async event => {
     data = imported;
 
     selectedId =
-      data.periods[
-        data.periods.length - 1
-      ].id;
+      data.periods[data.periods.length - 1].id;
 
     $("settingsDialog").close();
     render();
 
-    alert(
-      "Säkerhetskopian har återställts."
-    );
+    alert("Säkerhetskopian har återställts.");
   } catch (error) {
     console.error(error);
-
-    alert(
-      "Kunde inte importera säkerhetskopian."
-    );
+    alert("Kunde inte importera säkerhetskopian.");
   } finally {
     event.target.value = "";
   }
 };
 
-/* DIAGRAM – NYTT I 4.4 */
+/* Diagram */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -1398,22 +1170,14 @@ function dailyExpenses() {
     day.items.push(item);
   });
 
-  return {
-    days,
-    undated,
-    outside
-  };
+  return { days, undated, outside };
 }
 
 function drawChart(svg, days, large = false) {
   svg.replaceChildren();
 
-  const width = 340;
-  const height = large ? 180 : 68;
-
   const left = large ? 12 : 3;
   const right = large ? 328 : 337;
-
   const top = large ? 15 : 5;
   const bottom = large ? 154 : 61;
 
@@ -1433,8 +1197,7 @@ function drawChart(svg, days, large = false) {
         usableWidth;
 
     const y = max > 0
-      ? bottom -
-        amount / max * usableHeight
+      ? bottom - amount / max * usableHeight
       : bottom;
 
     return { x, y };
@@ -1444,8 +1207,7 @@ function drawChart(svg, days, large = false) {
 
   for (let i = 0; i < gridLines; i++) {
     const y = top +
-      i / (gridLines - 1) *
-      usableHeight;
+      i / (gridLines - 1) * usableHeight;
 
     svg.append(
       svgElement("line", {
@@ -1460,13 +1222,10 @@ function drawChart(svg, days, large = false) {
     );
   }
 
-  if (days.length === 0) {
-    return;
-  }
+  if (days.length === 0) return;
 
   const points = days.map(
-    (day, index) =>
-      position(index, day.amount)
+    (day, index) => position(index, day.amount)
   );
 
   const linePath = points.map(
@@ -1488,7 +1247,6 @@ function drawChart(svg, days, large = false) {
         "stroke-linecap": "round"
       })
     );
-
     return;
   }
 
@@ -1522,14 +1280,9 @@ function drawChart(svg, days, large = false) {
 
   if (!large) {
     const peakDays = days
-      .map((day, index) => ({
-        ...day,
-        index
-      }))
+      .map((day, index) => ({ ...day, index }))
       .filter(day => day.amount > 0)
-      .sort(
-        (a, b) => b.amount - a.amount
-      )
+      .sort((a, b) => b.amount - a.amount)
       .slice(0, 4);
 
     peakDays.forEach(day => {
@@ -1557,9 +1310,7 @@ function drawChart(svg, days, large = false) {
       role: "button",
       tabindex: "0",
       "aria-label":
-        longDate(day.date) +
-        ", " +
-        money(day.amount),
+        longDate(day.date) + ", " + money(day.amount),
       style: "cursor:pointer"
     });
 
@@ -1604,7 +1355,9 @@ function showChartDay(day) {
   container.replaceChildren();
 
   const heading = el(
-    "div", "", "chart-detail-heading"
+    "div",
+    "",
+    "chart-detail-heading"
   );
 
   heading.append(
@@ -1616,7 +1369,9 @@ function showChartDay(day) {
 
   day.items.forEach(item => {
     const row = el(
-      "div", "", "chart-detail-item"
+      "div",
+      "",
+      "chart-detail-item"
     );
 
     row.append(
@@ -1638,11 +1393,7 @@ function renderMiniChart() {
   $("miniEnd").textContent =
     formatDate(period.end);
 
-  drawChart(
-    $("miniChart"),
-    chart.days,
-    false
-  );
+  drawChart($("miniChart"), chart.days, false);
 }
 
 function renderLargeChart() {
@@ -1670,17 +1421,10 @@ function renderLargeChart() {
   $("chartEnd").textContent =
     formatDate(period.end);
 
-  $("chartTotal").textContent =
-    money(total);
+  $("chartTotal").textContent = money(total);
+  $("chartMax").textContent = money(biggest);
 
-  $("chartMax").textContent =
-    money(biggest);
-
-  drawChart(
-    $("largeChart"),
-    chart.days,
-    true
-  );
+  drawChart($("largeChart"), chart.days, true);
 
   const details = $("chartDetails");
   details.replaceChildren();
@@ -1712,11 +1456,10 @@ function renderLargeChart() {
   const messages = [];
 
   if (chart.undated.length > 0) {
-    const totalUndated =
-      chart.undated.reduce(
-        (sum, item) => sum + item.amount,
-        0
-      );
+    const totalUndated = chart.undated.reduce(
+      (sum, item) => sum + item.amount,
+      0
+    );
 
     messages.push(
       chart.undated.length +
