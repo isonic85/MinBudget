@@ -68,7 +68,7 @@
     <section class="card">
       <div class="section-heading">
         <h2>Mina pengar</h2>
-        <span>50 / 30 / 20</span>
+        <span id="budgetModelLabel">50 / 30 / 20</span>
       </div>
       <div id="categories"></div>
     </section>
@@ -77,7 +77,7 @@
     <button id="withdrawBtn" class="secondary-btn" type="button">− Ta från sparandet</button>
     <button id="newPeriodBtn" class="secondary-btn" type="button">+ Ny löneperiod</button>
 
-    <footer>MinBudget 4.6</footer>
+    <footer>MinBudget 4.7</footer>
   </main>
 
   <dialog id="expenseDialog">
@@ -92,9 +92,9 @@
 
       <label for="expenseCategory">Kategori</label>
       <select id="expenseCategory">
-        <option value="behov">Behov – 50 %</option>
-        <option value="onskemal">Tänk efter – 30 %</option>
-        <option value="framtid">Framtid – 20 %</option>
+        <option value="behov">Behov</option>
+        <option value="onskemal">Tänk efter</option>
+        <option value="framtid">Framtid</option>
       </select>
 
       <label for="expenseType">Typ</label>
@@ -164,6 +164,28 @@
       <label for="periodEnd">Slutdatum</label>
       <input id="periodEnd" type="date">
 
+      <label for="settingsBudgetModel">Budgetmodell</label>
+      <select id="settingsBudgetModel"></select>
+
+      <div id="settingsCustomBudget" class="custom-budget hidden">
+        <p class="hint">Ange hur lönen ska fördelas. Summan måste bli 100 %.</p>
+        <div class="custom-budget-grid">
+          <div>
+            <label for="settingsNeeds">Behov %</label>
+            <input id="settingsNeeds" type="number" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label for="settingsWants">Tänk efter %</label>
+            <input id="settingsWants" type="number" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label for="settingsFuture">Framtid %</label>
+            <input id="settingsFuture" type="number" min="0" max="100" step="1">
+          </div>
+        </div>
+        <p id="settingsBudgetSum" class="budget-sum"></p>
+      </div>
+
       <button id="saveSettings" type="button" class="primary-btn">Spara inställningar</button>
       <button id="deletePeriod" type="button" class="danger-btn">Ta bort vald löneperiod</button>
 
@@ -181,13 +203,45 @@
   <dialog id="periodDialog">
     <div class="dialog-body">
       <h2>Ny löneperiod</h2>
-      <p class="hint">Välj vilka kostnader som ska följa med.</p>
+      <p class="hint">Välj datum, budgetmodell och vilka kostnader som ska följa med.</p>
 
       <label for="newStart">Nästa lönedatum</label>
       <input id="newStart" type="date">
 
       <label for="newEnd">Periodens sista dag</label>
       <input id="newEnd" type="date">
+
+      <label for="newBudgetModel">Budgetmodell</label>
+      <select id="newBudgetModel"></select>
+
+      <div id="newCustomBudget" class="custom-budget hidden">
+        <p class="hint">Ange hur lönen ska fördelas. Summan måste bli 100 %.</p>
+        <div class="custom-budget-grid">
+          <div>
+            <label for="newNeeds">Behov %</label>
+            <input id="newNeeds" type="number" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label for="newWants">Tänk efter %</label>
+            <input id="newWants" type="number" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label for="newFuture">Framtid %</label>
+            <input id="newFuture" type="number" min="0" max="100" step="1">
+          </div>
+        </div>
+        <p id="newBudgetSum" class="budget-sum"></p>
+      </div>
+
+      <div class="budget-preview">
+        <p class="eyebrow">Fördelning</p>
+        <div class="budget-preview-bar">
+          <span id="previewNeeds"></span>
+          <span id="previewWants"></span>
+          <span id="previewFuture"></span>
+        </div>
+        <div id="budgetPreviewText" class="budget-preview-text"></div>
+      </div>
 
       <label class="check-row">
         <input id="copyIncome" type="checkbox" checked>
