@@ -3,9 +3,9 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17272b">
-  <title>MinBudget</title>
+  <title>MinBudget 4.8</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
@@ -16,53 +16,50 @@
         <h1>💰 MinBudget</h1>
         <p>Din ekonomi, enkelt.</p>
       </div>
-      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Öppna inställningar">⚙️</button>
+      <button id="settingsBtn" class="icon-btn" aria-label="Inställningar">⚙️</button>
     </header>
 
     <section class="card overview">
       <div class="period-nav">
-        <button id="prevPeriod" class="arrow-btn" type="button" aria-label="Föregående löneperiod">‹</button>
+        <button id="prevPeriod" class="arrow-btn" aria-label="Föregående period">‹</button>
         <div>
           <h2 id="periodName"></h2>
           <p id="periodDates"></p>
         </div>
-        <button id="nextPeriod" class="arrow-btn" type="button" aria-label="Nästa löneperiod">›</button>
+        <button id="nextPeriod" class="arrow-btn" aria-label="Nästa period">›</button>
       </div>
 
       <div class="divider"></div>
 
-      <p class="eyebrow">Kvar att använda</p>
+      <p class="eyebrow">Kvar på kontot (beräknat)</p>
       <div id="available" class="big-amount">0 kr</div>
-      <p class="hint">Efter alla registrerade utgifter och sparande, inklusive uttag från sparandet</p>
+      <p class="hint">Lön minus betalda kostnader och sparöverföringar, plus uttag. Inte ett banksaldo.</p>
+
+      <div class="future-balance">
+        <span>Kvar efter alla räkningar</span>
+        <strong id="afterBills">0 kr</strong>
+      </div>
 
       <div class="payment-summary">
-        <div>
-          <span>Redan betalt</span>
-          <strong id="paidTotal">0 kr</strong>
-        </div>
-        <div>
-          <span>Kvar att betala</span>
-          <strong id="unpaidTotal">0 kr</strong>
-        </div>
+        <div><span>Redan betalt</span><strong id="paidTotal">0 kr</strong></div>
+        <div><span>Kvar att betala</span><strong id="unpaidTotal">0 kr</strong></div>
         <div id="withdrawalSummary" class="hidden">
           <span>Tagit från sparandet</span>
           <strong id="withdrawalTotal">0 kr</strong>
         </div>
       </div>
 
-      <div class="mini-chart-section">
-        <button id="chartOpenBtn" class="mini-chart-button" type="button" aria-label="Visa större utgiftsdiagram">
-          <span class="mini-chart-title">
-            <strong>📈 Utgifter mellan lönerna</strong>
-            <span>Visa mer ›</span>
-          </span>
-          <svg id="miniChart" viewBox="0 0 340 68" preserveAspectRatio="none" role="img" aria-label="Utgifter per dag"></svg>
-          <span class="mini-chart-dates">
-            <span id="miniStart"></span>
-            <span id="miniEnd"></span>
-          </span>
-        </button>
-      </div>
+      <button id="chartOpenBtn" class="mini-chart-button">
+        <span class="mini-chart-title">
+          <strong>📈 Betalningar mellan lönerna</strong>
+          <span>Visa mer ›</span>
+        </span>
+        <svg id="miniChart" viewBox="0 0 340 68" preserveAspectRatio="none" aria-label="Betalningar per dag"></svg>
+        <span class="mini-chart-dates">
+          <span id="miniStart"></span>
+          <span id="miniEnd"></span>
+        </span>
+      </button>
     </section>
 
     <section class="card">
@@ -73,11 +70,11 @@
       <div id="categories"></div>
     </section>
 
-    <button id="addBtn" class="primary-btn" type="button">+ Lägg till kostnad</button>
-    <button id="withdrawBtn" class="secondary-btn" type="button">− Ta från sparandet</button>
-    <button id="newPeriodBtn" class="secondary-btn" type="button">+ Ny löneperiod</button>
+    <button id="addBtn" class="primary-btn">+ Lägg till kostnad</button>
+    <button id="withdrawBtn" class="secondary-btn">− Ta från sparandet</button>
+    <button id="newPeriodBtn" class="secondary-btn">+ Ny löneperiod</button>
 
-    <footer>MinBudget 4.7</footer>
+    <footer>MinBudget 4.8 💚</footer>
   </main>
 
   <dialog id="expenseDialog">
@@ -116,32 +113,31 @@
       <div id="paidDateGroup" class="hidden">
         <label for="expensePaidDate">Betalningsdatum</label>
         <input id="expensePaidDate" type="date">
-        <p class="hint">Fylls i automatiskt, men kan ändras i efterhand.</p>
       </div>
 
-      <button type="submit" class="primary-btn">Spara</button>
-      <button id="cancelExpense" type="button" class="secondary-btn">Avbryt</button>
-      <button id="deleteExpense" type="button" class="danger-btn hidden">Ta bort posten</button>
+      <button class="primary-btn" type="submit">Spara</button>
+      <button id="cancelExpense" class="secondary-btn" type="button">Avbryt</button>
+      <button id="deleteExpense" class="danger-btn hidden" type="button">Ta bort posten</button>
     </form>
   </dialog>
 
   <dialog id="withdrawDialog">
     <form id="withdrawForm" class="dialog-body">
       <h2 id="withdrawTitle">Ta från sparandet</h2>
-      <p class="hint">Ett uttag minskar ditt sparande och ökar pengarna du kan använda. Det räknas inte som en extra kostnad.</p>
+      <p class="hint">Uttaget minskar sparandet och läggs tillbaka i pengarna på kontot. Det är ingen ny kostnad.</p>
 
       <label for="withdrawName">Anledning</label>
-      <input id="withdrawName" required placeholder="T.ex. Behövde pengar till bilen">
+      <input id="withdrawName" required placeholder="T.ex. Bilreparation">
 
       <label for="withdrawAmount">Belopp (kr)</label>
       <input id="withdrawAmount" type="number" min="0.01" step="0.01" required>
 
-      <label for="withdrawDate">Datum för uttaget</label>
+      <label for="withdrawDate">Datum</label>
       <input id="withdrawDate" type="date" required>
 
-      <button type="submit" class="primary-btn">Spara uttag</button>
-      <button id="cancelWithdraw" type="button" class="secondary-btn">Avbryt</button>
-      <button id="deleteWithdraw" type="button" class="danger-btn hidden">Ta bort uttaget</button>
+      <button class="primary-btn" type="submit">Spara uttag</button>
+      <button id="cancelWithdraw" class="secondary-btn" type="button">Avbryt</button>
+      <button id="deleteWithdraw" class="danger-btn hidden" type="button">Ta bort uttaget</button>
     </form>
   </dialog>
 
@@ -154,7 +150,6 @@
 
       <label for="payday">Vanlig lönedag</label>
       <select id="payday"></select>
-      <p class="hint">Används när nya perioder föreslås. Ändrar inte tidigare perioder.</p>
 
       <h3>Vald löneperiod</h3>
 
@@ -168,42 +163,32 @@
       <select id="settingsBudgetModel"></select>
 
       <div id="settingsCustomBudget" class="custom-budget hidden">
-        <p class="hint">Ange hur lönen ska fördelas. Summan måste bli 100 %.</p>
+        <p class="hint">Summan ska bli 100 %.</p>
         <div class="custom-budget-grid">
-          <div>
-            <label for="settingsNeeds">Behov %</label>
-            <input id="settingsNeeds" type="number" min="0" max="100" step="1">
-          </div>
-          <div>
-            <label for="settingsWants">Tänk efter %</label>
-            <input id="settingsWants" type="number" min="0" max="100" step="1">
-          </div>
-          <div>
-            <label for="settingsFuture">Framtid %</label>
-            <input id="settingsFuture" type="number" min="0" max="100" step="1">
-          </div>
+          <div><label for="settingsNeeds">Behov %</label><input id="settingsNeeds" type="number" min="0" max="100" step="1"></div>
+          <div><label for="settingsWants">Tänk efter %</label><input id="settingsWants" type="number" min="0" max="100" step="1"></div>
+          <div><label for="settingsFuture">Framtid %</label><input id="settingsFuture" type="number" min="0" max="100" step="1"></div>
         </div>
         <p id="settingsBudgetSum" class="budget-sum"></p>
       </div>
 
-      <button id="saveSettings" type="button" class="primary-btn">Spara inställningar</button>
-      <button id="deletePeriod" type="button" class="danger-btn">Ta bort vald löneperiod</button>
+      <button id="saveSettings" class="primary-btn">Spara inställningar</button>
+      <button id="deletePeriod" class="danger-btn">Ta bort vald löneperiod</button>
 
       <h3>Säkerhetskopiering</h3>
-      <button id="exportBtn" type="button" class="secondary-btn">Ladda ner säkerhetskopia</button>
+      <button id="exportBtn" class="secondary-btn">Ladda ner säkerhetskopia</button>
 
       <label for="importFile">Återställ säkerhetskopia</label>
       <input id="importFile" type="file" accept=".json,application/json">
-      <p class="hint">Import ersätter uppgifterna i den här versionen.</p>
+      <p class="hint">Import ersätter uppgifterna i appen.</p>
 
-      <button id="closeSettings" type="button" class="secondary-btn">Stäng</button>
+      <button id="closeSettings" class="secondary-btn">Stäng</button>
     </div>
   </dialog>
 
   <dialog id="periodDialog">
     <div class="dialog-body">
       <h2>Ny löneperiod</h2>
-      <p class="hint">Välj datum, budgetmodell och vilka kostnader som ska följa med.</p>
 
       <label for="newStart">Nästa lönedatum</label>
       <input id="newStart" type="date">
@@ -215,20 +200,11 @@
       <select id="newBudgetModel"></select>
 
       <div id="newCustomBudget" class="custom-budget hidden">
-        <p class="hint">Ange hur lönen ska fördelas. Summan måste bli 100 %.</p>
+        <p class="hint">Summan ska bli 100 %.</p>
         <div class="custom-budget-grid">
-          <div>
-            <label for="newNeeds">Behov %</label>
-            <input id="newNeeds" type="number" min="0" max="100" step="1">
-          </div>
-          <div>
-            <label for="newWants">Tänk efter %</label>
-            <input id="newWants" type="number" min="0" max="100" step="1">
-          </div>
-          <div>
-            <label for="newFuture">Framtid %</label>
-            <input id="newFuture" type="number" min="0" max="100" step="1">
-          </div>
+          <div><label for="newNeeds">Behov %</label><input id="newNeeds" type="number" min="0" max="100" step="1"></div>
+          <div><label for="newWants">Tänk efter %</label><input id="newWants" type="number" min="0" max="100" step="1"></div>
+          <div><label for="newFuture">Framtid %</label><input id="newFuture" type="number" min="0" max="100" step="1"></div>
         </div>
         <p id="newBudgetSum" class="budget-sum"></p>
       </div>
@@ -251,8 +227,8 @@
       <h3>Kopiera kostnader</h3>
       <div id="copyList"></div>
 
-      <button id="confirmPeriod" type="button" class="primary-btn">Skapa löneperiod</button>
-      <button id="cancelPeriod" type="button" class="secondary-btn">Avbryt</button>
+      <button id="confirmPeriod" class="primary-btn">Skapa löneperiod</button>
+      <button id="cancelPeriod" class="secondary-btn">Avbryt</button>
     </div>
   </dialog>
 
@@ -260,34 +236,28 @@
     <div class="dialog-body">
       <div class="chart-dialog-heading">
         <h2>📈 Pengarnas rörelse</h2>
-        <button id="closeChart" type="button" class="chart-close" aria-label="Stäng diagrammet">✕</button>
+        <button id="closeChart" class="chart-close" aria-label="Stäng">✕</button>
       </div>
 
       <p id="chartPeriod" class="hint"></p>
 
       <div class="chart-stats">
-        <div>
-          <small>Registrerade betalningar</small>
-          <strong id="chartTotal">0 kr</strong>
-        </div>
-        <div>
-          <small>Största dagen</small>
-          <strong id="chartMax">0 kr</strong>
-        </div>
+        <div><small>Betalningar i perioden</small><strong id="chartTotal">0 kr</strong></div>
+        <div><small>Största dagen</small><strong id="chartMax">0 kr</strong></div>
       </div>
 
       <div class="chart-large-wrap">
-        <svg id="largeChart" viewBox="0 0 340 180" role="img" aria-label="Detaljerat diagram över utgifter per dag"></svg>
+        <svg id="largeChart" viewBox="0 0 340 180" aria-label="Betalningar per dag"></svg>
         <div class="chart-axis-dates">
           <span id="chartStart"></span>
           <span id="chartEnd"></span>
         </div>
       </div>
 
-      <p class="hint">Tryck på en topp för att se dagens betalningar. Uttag från sparandet räknas inte som utgifter.</p>
-      <div id="chartDetails" class="chart-details"></div>
+      <p class="hint">Tryck på en punkt för att se dagens betalningar. Uttag från sparandet räknas inte som kostnader.</p>
+      <div id="chartDetails"></div>
 
-      <button id="closeChartBottom" type="button" class="secondary-btn">Stäng</button>
+      <button id="closeChartBottom" class="secondary-btn">Stäng</button>
     </div>
   </dialog>
 </body>
