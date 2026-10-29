@@ -149,6 +149,42 @@ button:disabled { opacity: .35; cursor: default; }
   overflow-wrap: anywhere;
 }
 
+/* Nytt i 4.9: dagsbudget */
+
+.daily-budget {
+  background: #203d38;
+  border: 1px solid #507d69;
+  border-radius: 11px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.daily-budget-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.daily-budget-top span {
+  color: #c6e9d8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.daily-budget-top strong {
+  color: #a4e4c4;
+  font-size: clamp(18px, 5vw, 24px);
+  font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.daily-budget .hint {
+  margin: 6px 0 0;
+  color: #b4d4c5;
+}
+
 .payment-summary {
   background: #1d3435;
   border: 1px solid #3c5655;
@@ -161,12 +197,18 @@ button:disabled { opacity: .35; cursor: default; }
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  padding: 4px 0;
+  padding: 5px 0;
   font-size: 12px;
 }
 
 .payment-summary span { color: #b7cfca; }
-.payment-summary strong { color: white; white-space: nowrap; }
+.payment-summary strong {
+  color: white;
+  white-space: nowrap;
+  text-align: right;
+}
+
+#savedTotal { color: var(--green); }
 #withdrawalTotal { color: var(--danger); }
 
 .section-heading {
@@ -306,7 +348,12 @@ button:disabled { opacity: .35; cursor: default; }
 .category-item:last-child { border-bottom: 0; }
 
 .item-info { min-width: 0; flex: 1; }
-.item-info strong { display: block; font-size: 12px; overflow-wrap: anywhere; }
+.item-info strong {
+  display: block;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 .item-info small {
   display: block;
   color: var(--muted);
@@ -353,9 +400,23 @@ button:disabled { opacity: .35; cursor: default; }
   margin-top: 8px;
 }
 
-.primary-btn { background: #38877d; color: white; border: 1px solid #499d92; }
-.secondary-btn { background: #263c3e; color: #c0e9e1; border: 1px solid #4c817b; }
-.danger-btn { background: #452b30; color: #ffb8b8; border: 1px solid #845157; }
+.primary-btn {
+  background: #38877d;
+  color: white;
+  border: 1px solid #499d92;
+}
+
+.secondary-btn {
+  background: #263c3e;
+  color: #c0e9e1;
+  border: 1px solid #4c817b;
+}
+
+.danger-btn {
+  background: #452b30;
+  color: #ffb8b8;
+  border: 1px solid #845157;
+}
 
 .hidden { display: none !important; }
 .empty { color: var(--muted); font-size: 12px; padding: 10px 0; }
@@ -498,7 +559,12 @@ input:focus, select:focus, button:focus-visible {
 .mini-chart-title > span { color: #9bded2; font-size: 11px; }
 .mini-chart-dates { color: var(--muted); font-size: 10px; }
 
-#miniChart { display: block; width: 100%; height: 46px; margin-top: 6px; }
+#miniChart {
+  display: block;
+  width: 100%;
+  height: 46px;
+  margin-top: 6px;
+}
 
 .chart-dialog { width: min(94%, 550px); }
 
@@ -536,8 +602,19 @@ input:focus, select:focus, button:focus-visible {
   padding: 10px;
 }
 
-.chart-stats small { display: block; color: var(--muted); font-size: 10px; margin-bottom: 5px; }
-.chart-stats strong { display: block; color: var(--orange); font-size: 16px; overflow-wrap: anywhere; }
+.chart-stats small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+
+.chart-stats strong {
+  display: block;
+  color: var(--orange);
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
 
 .chart-large-wrap {
   background: #1d3034;
@@ -548,7 +625,14 @@ input:focus, select:focus, button:focus-visible {
 }
 
 #largeChart { display: block; width: 100%; height: auto; }
-.chart-axis-dates { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; padding: 0 7px; }
+
+.chart-axis-dates {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 10px;
+  padding: 0 7px;
+}
 
 .chart-detail-heading, .chart-detail-item {
   display: flex;
@@ -581,4 +665,5 @@ input:focus, select:focus, button:focus-visible {
   .category-number strong { font-size: 14px; }
   .chart-stats strong { font-size: 14px; }
   .mini-chart-title strong { font-size: 11px; }
+  .daily-budget-top strong { font-size: 19px; }
 }
