@@ -74,6 +74,7 @@ function today() {
 function parseDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return null;
   const date = new Date(value + "T12:00:00");
+
   return !Number.isNaN(date.getTime()) &&
     dateString(date) === value ? date : null;
 }
@@ -81,6 +82,7 @@ function parseDate(value) {
 function addDays(value, days) {
   const date = parseDate(value);
   if (!date) return null;
+
   date.setDate(date.getDate() + days);
   return dateString(date);
 }
@@ -88,6 +90,7 @@ function addDays(value, days) {
 function daysBetween(start, end) {
   const a = parseDate(start);
   const b = parseDate(end);
+
   return a && b
     ? Math.round((b - a) / 86400000)
     : 0;
@@ -108,6 +111,7 @@ function nextPayday(start, payday) {
     date.getMonth() + 1,
     1
   );
+
   return paydayInMonth(
     next.getFullYear(),
     next.getMonth() + 1,
@@ -117,6 +121,7 @@ function nextPayday(start, payday) {
 
 function periodAround(value, payday) {
   const date = parseDate(value);
+
   let start = paydayInMonth(
     date.getFullYear(),
     date.getMonth() + 1,
@@ -129,6 +134,7 @@ function periodAround(value, payday) {
       date.getMonth() - 1,
       1
     );
+
     start = paydayInMonth(
       previous.getFullYear(),
       previous.getMonth() + 1,
@@ -193,7 +199,13 @@ function normalizeBudget(value) {
   return result;
 }
 
-function makePeriod(start, end, income = 0, expenses = [], budget = defaultBudget) {
+function makePeriod(
+  start,
+  end,
+  income = 0,
+  expenses = [],
+  budget = defaultBudget
+) {
   return {
     id: uid(),
     start,
@@ -255,6 +267,7 @@ function validateData(raw) {
 
     const expenses = p.expenses.map(item => {
       const e = normalizeExpense(item);
+
       if (
         !e.name ||
         !Number.isFinite(e.amount) ||
@@ -266,11 +279,13 @@ function validateData(raw) {
       ) {
         throw new Error("Ogiltig kostnad");
       }
+
       return e;
     });
 
     const withdrawals = (p.withdrawals || []).map(item => {
       const w = normalizeWithdrawal(item);
+
       if (
         !w.name ||
         !Number.isFinite(w.amount) ||
@@ -279,6 +294,7 @@ function validateData(raw) {
       ) {
         throw new Error("Ogiltigt uttag");
       }
+
       return w;
     });
 
@@ -319,11 +335,16 @@ function validateData(raw) {
 
 function migrateOldData() {
   const v3 = localStorage.getItem("minbudget_v3");
-  if (v3) return validateData(JSON.parse(v3));
+
+  if (v3) {
+    return validateData(JSON.parse(v3));
+  }
 
   const v2 = localStorage.getItem("minbudget_v2");
+
   if (v2) {
     const old = JSON.parse(v2);
+
     if (
       !old.months ||
       typeof old.months !== "object" ||
@@ -360,8 +381,10 @@ function migrateOldData() {
   }
 
   const v1 = localStorage.getItem("minbudget_v1");
+
   if (v1) {
     const old = JSON.parse(v1);
+
     if (!Array.isArray(old.expenses)) {
       throw new Error("Ogiltig version 1");
     }
@@ -391,10 +414,18 @@ function migrateOldData() {
 
 function loadData() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) return validateData(JSON.parse(saved));
+
+  if (saved) {
+    return validateData(JSON.parse(saved));
+  }
 
   const migrated = migrateOldData();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(migrated)
+  );
+
   return migrated;
 }
 
@@ -404,17 +435,22 @@ try {
   data = loadData();
 } catch (error) {
   console.error(error);
+
   alert(
     "Kunde inte läsa dina tidigare uppgifter. " +
     "Inga gamla uppgifter har raderats. " +
     "Kontrollera din säkerhetskopia."
   );
+
   throw error;
 }
 
 function save() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(data)
+    );
   } catch (error) {
     alert("Kunde inte spara uppgifterna.");
     throw error;
@@ -423,12 +459,18 @@ function save() {
 
 if (!data.periods.length) {
   const dates = periodAround(today(), data.payday);
-  data.periods.push(makePeriod(dates.start, dates.end));
+
+  data.periods.push(
+    makePeriod(dates.start, dates.end)
+  );
+
   save();
 }
 
 let selectedId =
-  data.periods.find(p => p.start <= today() && p.end >= today())?.id ||
+  data.periods.find(
+    p => p.start <= today() && p.end >= today()
+  )?.id ||
   data.periods[data.periods.length - 1].id;
 
 let editingId = null;
@@ -447,7 +489,10 @@ let sortPreferences = {
 };
 
 try {
-  const savedSort = JSON.parse(localStorage.getItem(SORT_KEY) || "{}");
+  const savedSort = JSON.parse(
+    localStorage.getItem(SORT_KEY) || "{}"
+  );
+
   for (const key of Object.keys(sortPreferences)) {
     if (sortOptions[savedSort[key]]) {
       sortPreferences[key] = savedSort[key];
@@ -463,13 +508,21 @@ function currentPeriod() {
 
 function el(tag, text = "", className = "") {
   const node = document.createElement(tag);
+
   node.textContent = text;
-  if (className) node.className = className;
+
+  if (className) {
+    node.className = className;
+  }
+
   return node;
 }
 
 function sum(items) {
-  return items.reduce((total, item) => total + item.amount, 0);
+  return items.reduce(
+    (total, item) => total + item.amount,
+    0
+  );
 }
 
 function formatDate(value) {
@@ -494,59 +547,200 @@ function periodName(value) {
   }).format(parseDate(value));
 }
 
+// ------------------------------------
+// MinBudget 4.9: Beräkningar
+// ------------------------------------
+
+// Sparande identifieras på typen "sparande".
+// Det gör att en vanlig kostnad i kategorin
+// Framtid inte automatiskt räknas som sparande.
+
+function isSaving(item) {
+  return item.type === "sparande";
+}
+
 function totals() {
   const p = currentPeriod();
-  const total = sum(p.expenses);
-  const paid = sum(p.expenses.filter(e => e.paid));
-  const unpaid = total - paid;
+
+  const ordinary = p.expenses.filter(
+    item => !isSaving(item)
+  );
+
+  const savings = p.expenses.filter(isSaving);
+
+  const ordinaryTotal = sum(ordinary);
+  const ordinaryPaid = sum(
+    ordinary.filter(item => item.paid)
+  );
+
+  const savingsTotal = sum(savings);
+  const savingsPaid = sum(
+    savings.filter(item => item.paid)
+  );
+
   const withdrawals = sum(p.withdrawals);
 
+  const ordinaryUnpaid =
+    ordinaryTotal - ordinaryPaid;
+
+  const savingsUnpaid =
+    savingsTotal - savingsPaid;
+
+  const savedNet =
+    savingsPaid - withdrawals;
+
+  // Faktiskt registrerade överföringar
+  // räknas fortfarande bort från kontot.
+  const account =
+    p.income -
+    ordinaryPaid -
+    savingsPaid +
+    withdrawals;
+
+  // Alla planerade kostnader och överföringar
+  // reserveras, även om de inte betalats ännu.
+  const afterBills =
+    p.income -
+    ordinaryTotal -
+    savingsTotal +
+    withdrawals;
+
   return {
-    total,
-    paid,
-    unpaid,
+    total: ordinaryTotal + savingsTotal,
+    paid: ordinaryPaid,
+    unpaid: ordinaryUnpaid,
+    savingsTotal,
+    savingsPaid,
+    savingsUnpaid,
+    savedNet,
     withdrawals,
-    account: p.income - paid + withdrawals,
-    afterBills: p.income - total + withdrawals
+    account,
+    afterBills
+  };
+}
+
+// Inkluderar idag och periodens sista dag.
+// Exempel: 20 dagar kvar -> 5000 / 20.
+// Nästa dag utan nya kostnader -> 5000 / 19.
+
+function dailyBudget() {
+  const p = currentPeriod();
+  const currentDate = today();
+
+  if (currentDate < p.start) {
+    return {
+      active: false,
+      amount: null,
+      days: 0,
+      message: "Den här löneperioden har inte börjat ännu."
+    };
+  }
+
+  if (currentDate > p.end) {
+    return {
+      active: false,
+      amount: null,
+      days: 0,
+      message: "Den här löneperioden är avslutad."
+    };
+  }
+
+  const days = daysBetween(currentDate, p.end) + 1;
+  const remaining = totals().afterBills;
+
+  return {
+    active: true,
+    amount: remaining / days,
+    days,
+    remaining,
+    message:
+      money(remaining) +
+      " kvar efter planerade kostnader och sparande. " +
+      days +
+      (days === 1
+        ? " dag kvar, inklusive idag."
+        : " dagar kvar, inklusive idag.")
   };
 }
 
 function renderOverview() {
   const p = currentPeriod();
   const t = totals();
+  const daily = dailyBudget();
 
   $("periodName").textContent = periodName(p.start);
+
   $("periodDates").textContent =
     formatDate(p.start) + " – " + longDate(p.end);
 
   $("available").textContent = money(t.account);
-  $("available").classList.toggle("negative", t.account < 0);
+  $("available").classList.toggle(
+    "negative",
+    t.account < 0
+  );
 
   $("afterBills").textContent = money(t.afterBills);
-  $("afterBills").classList.toggle("negative", t.afterBills < 0);
+  $("afterBills").classList.toggle(
+    "negative",
+    t.afterBills < 0
+  );
 
+  // Nytt: endast vanliga utgifter.
   $("paidTotal").textContent = money(t.paid);
   $("unpaidTotal").textContent = money(t.unpaid);
+
+  // Nytt: sparande visas separat, efter uttag.
+  $("savedTotal").textContent = money(t.savedNet);
+  $("savedTotal").classList.toggle(
+    "negative",
+    t.savedNet < 0
+  );
 
   $("withdrawalSummary").classList.toggle(
     "hidden",
     t.withdrawals === 0
   );
-  $("withdrawalTotal").textContent = "−" + money(t.withdrawals);
+
+  $("withdrawalTotal").textContent =
+    "−" + money(t.withdrawals);
+
+  // Nytt: dagligt belopp.
+  $("dailyAllowance").textContent = daily.active
+    ? money(daily.amount) + "/dag"
+    : "–";
+
+  $("dailyAllowance").classList.toggle(
+    "negative",
+    daily.active && daily.amount < 0
+  );
+
+  $("dailyAllowanceHint").textContent =
+    daily.message;
 
   $("budgetModelLabel").textContent =
-    [p.budget.needs, p.budget.wants, p.budget.future].join(" / ");
+    [
+      p.budget.needs,
+      p.budget.wants,
+      p.budget.future
+    ].join(" / ");
 
-  const index = data.periods.findIndex(p => p.id === selectedId);
+  const index = data.periods.findIndex(
+    period => period.id === selectedId
+  );
+
   $("prevPeriod").disabled = index === 0;
-  $("nextPeriod").disabled = index === data.periods.length - 1;
+
+  $("nextPeriod").disabled =
+    index === data.periods.length - 1;
 }
 
 function button(text, className, label, handler) {
   const node = el("button", text, className);
+
   node.type = "button";
   node.setAttribute("aria-label", label);
   node.onclick = handler;
+
   return node;
 }
 
@@ -558,14 +752,17 @@ function sortedItems(items, sort) {
       return b.amount - a.amount ||
         a.name.localeCompare(b.name, "sv");
     }
+
     if (sort === "amountAsc") {
       return a.amount - b.amount ||
         a.name.localeCompare(b.name, "sv");
     }
+
     if (sort === "nameAsc") {
       return a.name.localeCompare(b.name, "sv") ||
         b.amount - a.amount;
     }
+
     return b.name.localeCompare(a.name, "sv") ||
       b.amount - a.amount;
   });
@@ -576,14 +773,21 @@ function sortedItems(items, sort) {
 function renderCategories() {
   const p = currentPeriod();
   const container = $("categories");
+
   container.replaceChildren();
 
   const withdrawalTotal = sum(p.withdrawals);
 
   for (const [key, category] of Object.entries(categories)) {
-    const items = p.expenses.filter(e => e.category === key);
+    const items = p.expenses.filter(
+      item => item.category === key
+    );
+
     const total = sum(items);
-    const paid = sum(items.filter(e => e.paid));
+    const paid = sum(
+      items.filter(item => item.paid)
+    );
+
     const unpaid = total - paid;
     const future = key === "framtid";
 
@@ -594,25 +798,44 @@ function renderCategories() {
         : p.budget.future;
 
     const budget = p.income * percent / 100;
-    const actual = future ? paid - withdrawalTotal : paid;
-    const planned = future ? total - withdrawalTotal : total;
+
+    // Behåller kategoriernas befintliga logik.
+    const actual = future
+      ? paid - withdrawalTotal
+      : paid;
+
+    const planned = future
+      ? total - withdrawalTotal
+      : total;
 
     const difference = future
       ? actual - budget
       : budget - planned;
 
-    const progressValue = future ? actual : planned;
+    const progressValue = future
+      ? actual
+      : planned;
+
     const progress = budget > 0
-      ? Math.min(100, Math.max(0, progressValue / budget * 100))
+      ? Math.min(
+          100,
+          Math.max(0, progressValue / budget * 100)
+        )
       : progressValue > 0 ? 100 : 0;
 
     const wrapper = el("div", "", "category");
     const toggle = el("button", "", "category-toggle");
+
     toggle.type = "button";
-    toggle.setAttribute("aria-expanded", String(expanded[key]));
+
+    toggle.setAttribute(
+      "aria-expanded",
+      String(expanded[key])
+    );
 
     const title = el("div", "", "category-title");
     const dot = el("span", "", "dot");
+
     dot.style.background = category.color;
 
     title.append(
@@ -623,7 +846,11 @@ function renderCategories() {
 
     toggle.append(
       title,
-      el("span", expanded[key] ? "⌃" : "⌄", "chevron")
+      el(
+        "span",
+        expanded[key] ? "⌃" : "⌄",
+        "chevron"
+      )
     );
 
     toggle.onclick = () => {
@@ -633,13 +860,20 @@ function renderCategories() {
 
     const bar = el("div", "", "progress");
     const fill = el("div", "", "progress-fill");
+
     fill.style.width = progress + "%";
     fill.style.background = category.color;
+
     bar.append(fill);
 
     const summary = el("div", "", "category-summary");
     const left = el("div", "", "category-number");
-    const right = el("div", "", "category-number remaining");
+
+    const right = el(
+      "div",
+      "",
+      "category-number remaining"
+    );
 
     left.append(
       el("small", future ? "Faktiskt sparat" : "Betalt"),
@@ -647,7 +881,9 @@ function renderCategories() {
     );
 
     if (future && actual < 0) {
-      left.querySelector("strong").classList.add("savings-negative");
+      left.querySelector("strong").classList.add(
+        "savings-negative"
+      );
     }
 
     if (future) {
@@ -656,7 +892,10 @@ function renderCategories() {
           el("small", "Extra sparat"),
           el("strong", "+" + money(difference))
         );
-        right.querySelector("strong").classList.add("savings-positive");
+
+        right.querySelector("strong").classList.add(
+          "savings-positive"
+        );
       } else if (difference === 0) {
         right.append(
           el("small", "Sparmålet uppnått"),
@@ -670,11 +909,18 @@ function renderCategories() {
       }
     } else {
       const over = difference < 0;
+
       right.append(
-        el("small", over ? "Över budgeten" : "Kvar av budgeten"),
+        el(
+          "small",
+          over ? "Över budgeten" : "Kvar av budgeten"
+        ),
         el("strong", money(Math.abs(difference)))
       );
-      if (over) right.classList.add("over-budget");
+
+      if (over) {
+        right.classList.add("over-budget");
+      }
     }
 
     summary.append(left, right);
@@ -696,8 +942,10 @@ function renderCategories() {
       wrapper.append(
         el(
           "p",
-          "Planerat netto efter uttag: " + money(planned) +
-            " • Ej överfört: " + money(unpaid),
+          "Planerat netto efter uttag: " +
+            money(planned) +
+            " • Ej överfört: " +
+            money(unpaid),
           "savings-note"
         )
       );
@@ -706,7 +954,8 @@ function renderCategories() {
         wrapper.append(
           el(
             "p",
-            "Uttag från sparandet: −" + money(withdrawalTotal),
+            "Uttag från sparandet: −" +
+              money(withdrawalTotal),
             "savings-note savings-negative"
           )
         );
@@ -730,26 +979,35 @@ function renderCategories() {
       const sortLabel = el("label", "Sortera köp");
       const sortSelect = el("select");
       const selectId = "sort-" + key;
+
       sortSelect.id = selectId;
       sortLabel.htmlFor = selectId;
 
-      Object.entries(sortOptions).forEach(([value, label]) => {
-        const option = el("option", label);
-        option.value = value;
-        sortSelect.append(option);
-      });
+      Object.entries(sortOptions).forEach(
+        ([value, label]) => {
+          const option = el("option", label);
+          option.value = value;
+          sortSelect.append(option);
+        }
+      );
 
       sortSelect.value = sortPreferences[key];
+
       sortSelect.onchange = () => {
         sortPreferences[key] = sortSelect.value;
+
         try {
           localStorage.setItem(
             SORT_KEY,
             JSON.stringify(sortPreferences)
           );
         } catch (error) {
-          console.warn("Sorteringen kunde inte sparas", error);
+          console.warn(
+            "Sorteringen kunde inte sparas",
+            error
+          );
         }
+
         renderCategories();
       };
 
@@ -760,7 +1018,9 @@ function renderCategories() {
         detail.append(
           el(
             "p",
-            (future ? "Kvar att överföra: " : "Kvar att betala: ") +
+            (future
+              ? "Kvar att överföra: "
+              : "Kvar att betala: ") +
               money(unpaid),
             "category-unpaid"
           )
@@ -768,7 +1028,10 @@ function renderCategories() {
       }
 
       const entries = [
-        ...items.map(item => ({ ...item, kind: "expense" })),
+        ...items.map(item => ({
+          ...item,
+          kind: "expense"
+        })),
         ...(future
           ? p.withdrawals.map(item => ({
               ...item,
@@ -778,15 +1041,22 @@ function renderCategories() {
       ];
 
       if (!entries.length) {
-        detail.append(el("p", "Inga poster ännu.", "empty"));
+        detail.append(
+          el("p", "Inga poster ännu.", "empty")
+        );
       }
 
-      sortedItems(entries, sortPreferences[key]).forEach(item => {
+      sortedItems(
+        entries,
+        sortPreferences[key]
+      ).forEach(item => {
         const row = el(
           "div",
           "",
           "category-item" +
-            (item.kind === "withdrawal" ? " withdrawal-item" : "")
+            (item.kind === "withdrawal"
+              ? " withdrawal-item"
+              : "")
         );
 
         const info = el("div", "", "item-info");
@@ -811,11 +1081,13 @@ function renderCategories() {
           let description = types[item.type];
 
           if (item.due) {
-            description += " • Förfaller " + formatDate(item.due);
+            description +=
+              " • Förfaller " + formatDate(item.due);
           }
 
           if (item.paid && item.paidDate) {
-            description += " • Betald " + formatDate(item.paidDate);
+            description +=
+              " • Betald " + formatDate(item.paidDate);
           }
 
           info.append(
@@ -827,14 +1099,21 @@ function renderCategories() {
             el("strong", money(item.amount)),
             button(
               item.paid ? "✓ Betald" : "○ Obetald",
-              "paid-toggle" + (item.paid ? " is-paid" : ""),
+              "paid-toggle" +
+                (item.paid ? " is-paid" : ""),
               "Ändra betalningsstatus",
               () => {
-                const original = p.expenses.find(e => e.id === item.id);
+                const original = p.expenses.find(
+                  e => e.id === item.id
+                );
+
                 if (!original) return;
 
                 original.paid = !original.paid;
-                original.paidDate = original.paid ? today() : "";
+                original.paidDate = original.paid
+                  ? today()
+                  : "";
+
                 save();
                 render();
               }
@@ -859,43 +1138,67 @@ function renderCategories() {
   }
 }
 
+// ------------------------------------
 // Kostnader
+// ------------------------------------
 
 function updatePaidField(fill = true) {
   const paid = $("expensePaid").checked;
-  $("paidDateGroup").classList.toggle("hidden", !paid);
 
-  if (paid && fill && !$("expensePaidDate").value) {
+  $("paidDateGroup").classList.toggle(
+    "hidden",
+    !paid
+  );
+
+  if (
+    paid &&
+    fill &&
+    !$("expensePaidDate").value
+  ) {
     $("expensePaidDate").value = today();
   }
 
-  if (!paid) $("expensePaidDate").value = "";
+  if (!paid) {
+    $("expensePaidDate").value = "";
+  }
 }
 
-$("expensePaid").onchange = () => updatePaidField();
+$("expensePaid").onchange = () =>
+  updatePaidField();
 
 function closeExpense() {
   editingId = null;
   $("expenseForm").reset();
+
   $("deleteExpense").classList.add("hidden");
   $("expenseDialog").close();
 }
 
 $("addBtn").onclick = () => {
   editingId = null;
+
   $("expenseForm").reset();
-  $("expenseDialogTitle").textContent = "Lägg till kostnad";
+  $("expenseDialogTitle").textContent =
+    "Lägg till kostnad";
+
   $("deleteExpense").classList.add("hidden");
+
   updatePaidField(false);
   $("expenseDialog").showModal();
 };
 
 function editExpense(id) {
-  const e = currentPeriod().expenses.find(item => item.id === id);
+  const e = currentPeriod().expenses.find(
+    item => item.id === id
+  );
+
   if (!e) return;
 
   editingId = id;
-  $("expenseDialogTitle").textContent = "Redigera kostnad";
+
+  $("expenseDialogTitle").textContent =
+    "Redigera kostnad";
+
   $("expenseName").value = e.name;
   $("expenseAmount").value = e.amount;
   $("expenseCategory").value = e.category;
@@ -903,7 +1206,9 @@ function editExpense(id) {
   $("expenseDue").value = e.due;
   $("expensePaid").checked = e.paid;
   $("expensePaidDate").value = e.paidDate;
+
   $("deleteExpense").classList.remove("hidden");
+
   updatePaidField(false);
   $("expenseDialog").showModal();
 }
@@ -919,7 +1224,10 @@ $("expenseForm").onsubmit = event => {
   const type = $("expenseType").value;
   const due = $("expenseDue").value;
   const paid = $("expensePaid").checked;
-  const paidDate = paid ? $("expensePaidDate").value || today() : "";
+
+  const paidDate = paid
+    ? $("expensePaidDate").value || today()
+    : "";
 
   if (
     !name ||
@@ -935,14 +1243,28 @@ $("expenseForm").onsubmit = event => {
   }
 
   const values = {
-    name, amount, category, type, due, paid, paidDate
+    name,
+    amount,
+    category,
+    type,
+    due,
+    paid,
+    paidDate
   };
 
   if (editingId) {
-    const item = currentPeriod().expenses.find(e => e.id === editingId);
-    if (item) Object.assign(item, values);
+    const item = currentPeriod().expenses.find(
+      e => e.id === editingId
+    );
+
+    if (item) {
+      Object.assign(item, values);
+    }
   } else {
-    currentPeriod().expenses.push({ id: uid(), ...values });
+    currentPeriod().expenses.push({
+      id: uid(),
+      ...values
+    });
   }
 
   save();
@@ -951,44 +1273,64 @@ $("expenseForm").onsubmit = event => {
 };
 
 $("deleteExpense").onclick = () => {
-  if (!editingId || !confirm("Ta bort kostnaden?")) return;
+  if (
+    !editingId ||
+    !confirm("Ta bort kostnaden?")
+  ) {
+    return;
+  }
 
-  currentPeriod().expenses = currentPeriod().expenses.filter(
-    e => e.id !== editingId
-  );
+  currentPeriod().expenses =
+    currentPeriod().expenses.filter(
+      e => e.id !== editingId
+    );
 
   save();
   closeExpense();
   render();
 };
 
-// Uttag
+// ------------------------------------
+// Uttag från sparandet
+// ------------------------------------
 
 function closeWithdraw() {
   editingWithdrawalId = null;
   $("withdrawForm").reset();
+
   $("deleteWithdraw").classList.add("hidden");
   $("withdrawDialog").close();
 }
 
 $("withdrawBtn").onclick = () => {
   editingWithdrawalId = null;
+
   $("withdrawForm").reset();
-  $("withdrawTitle").textContent = "Ta från sparandet";
+  $("withdrawTitle").textContent =
+    "Ta från sparandet";
+
   $("withdrawDate").value = today();
+
   $("deleteWithdraw").classList.add("hidden");
   $("withdrawDialog").showModal();
 };
 
 function editWithdrawal(id) {
-  const w = currentPeriod().withdrawals.find(item => item.id === id);
+  const w = currentPeriod().withdrawals.find(
+    item => item.id === id
+  );
+
   if (!w) return;
 
   editingWithdrawalId = id;
-  $("withdrawTitle").textContent = "Redigera uttag";
+
+  $("withdrawTitle").textContent =
+    "Redigera uttag";
+
   $("withdrawName").value = w.name;
   $("withdrawAmount").value = w.amount;
   $("withdrawDate").value = w.date;
+
   $("deleteWithdraw").classList.remove("hidden");
   $("withdrawDialog").showModal();
 }
@@ -1002,7 +1344,12 @@ $("withdrawForm").onsubmit = event => {
   const amount = Number($("withdrawAmount").value);
   const date = $("withdrawDate").value;
 
-  if (!name || !Number.isFinite(amount) || amount <= 0 || !parseDate(date)) {
+  if (
+    !name ||
+    !Number.isFinite(amount) ||
+    amount <= 0 ||
+    !parseDate(date)
+  ) {
     alert("Kontrollera uttaget.");
     return;
   }
@@ -1011,10 +1358,20 @@ $("withdrawForm").onsubmit = event => {
     const w = currentPeriod().withdrawals.find(
       item => item.id === editingWithdrawalId
     );
-    if (w) Object.assign(w, { name, amount, date });
+
+    if (w) {
+      Object.assign(w, {
+        name,
+        amount,
+        date
+      });
+    }
   } else {
     currentPeriod().withdrawals.push({
-      id: uid(), name, amount, date
+      id: uid(),
+      name,
+      amount,
+      date
     });
   }
 
@@ -1024,38 +1381,50 @@ $("withdrawForm").onsubmit = event => {
 };
 
 $("deleteWithdraw").onclick = () => {
-  if (!editingWithdrawalId || !confirm("Ta bort uttaget?")) return;
+  if (
+    !editingWithdrawalId ||
+    !confirm("Ta bort uttaget?")
+  ) {
+    return;
+  }
 
-  currentPeriod().withdrawals = currentPeriod().withdrawals.filter(
-    w => w.id !== editingWithdrawalId
-  );
+  currentPeriod().withdrawals =
+    currentPeriod().withdrawals.filter(
+      w => w.id !== editingWithdrawalId
+    );
 
   save();
   closeWithdraw();
   render();
 };
 
+// ------------------------------------
 // Budgetformulär
+// ------------------------------------
 
 function populateModelSelect(id) {
   const select = $(id);
   select.replaceChildren();
 
-  Object.entries(modelLabels).forEach(([value, label]) => {
-    const option = el("option", label);
-    option.value = value;
-    select.append(option);
-  });
+  Object.entries(modelLabels).forEach(
+    ([value, label]) => {
+      const option = el("option", label);
+      option.value = value;
+      select.append(option);
+    }
+  );
 }
 
 populateModelSelect("settingsBudgetModel");
 populateModelSelect("newBudgetModel");
 
 function formValues(prefix) {
-  return ["Needs", "Wants", "Future"].map(suffix => {
-    const raw = $(prefix + suffix).value.trim();
-    return raw === "" ? NaN : Number(raw);
-  });
+  return ["Needs", "Wants", "Future"].map(
+    suffix => {
+      const raw = $(prefix + suffix).value.trim();
+      return raw === "" ? NaN : Number(raw);
+    }
+  );
 }
 
 function setBudgetForm(prefix, budget) {
@@ -1063,48 +1432,75 @@ function setBudgetForm(prefix, budget) {
   $(prefix + "Needs").value = budget.needs;
   $(prefix + "Wants").value = budget.wants;
   $(prefix + "Future").value = budget.future;
+
   updateBudgetForm(prefix);
 }
 
 function readBudgetForm(prefix) {
   const model = $(prefix + "BudgetModel").value;
-  return makeBudget(model, formValues(prefix));
+
+  return makeBudget(
+    model,
+    formValues(prefix)
+  );
 }
 
 function updateBudgetForm(prefix) {
   const model = $(prefix + "BudgetModel").value;
   const custom = model === "custom";
 
-  $(prefix + "CustomBudget").classList.toggle("hidden", !custom);
+  $(prefix + "CustomBudget").classList.toggle(
+    "hidden",
+    !custom
+  );
 
   if (!custom) {
     const values = models[model];
-    $("" + prefix + "Needs").value = values[0];
-    $("" + prefix + "Wants").value = values[1];
-    $("" + prefix + "Future").value = values[2];
+
+    $(prefix + "Needs").value = values[0];
+    $(prefix + "Wants").value = values[1];
+    $(prefix + "Future").value = values[2];
   }
 
   const values = formValues(prefix);
-  const sumValue = values.reduce((a, b) => a + b, 0);
-  const valid = values.every(n =>
-    Number.isInteger(n) && n >= 0 && n <= 100
+
+  const sumValue = values.reduce(
+    (a, b) => a + b,
+    0
+  );
+
+  const valid = values.every(
+    n =>
+      Number.isInteger(n) &&
+      n >= 0 &&
+      n <= 100
   ) && sumValue === 100;
 
   const sumNode = $(prefix + "BudgetSum");
+
   sumNode.textContent = valid
     ? "Totalt: 100 % ✓"
     : "Totalt: " +
-      (Number.isFinite(sumValue) ? sumValue : "–") +
+      (Number.isFinite(sumValue)
+        ? sumValue
+        : "–") +
       " % – måste bli 100 %";
 
   sumNode.classList.toggle("invalid", !valid);
 
   if (prefix === "new") {
-    const safe = valid ? values : [0, 0, 0];
+    const safe = valid
+      ? values
+      : [0, 0, 0];
 
-    $("previewNeeds").style.width = safe[0] + "%";
-    $("previewWants").style.width = safe[1] + "%";
-    $("previewFuture").style.width = safe[2] + "%";
+    $("previewNeeds").style.width =
+      safe[0] + "%";
+
+    $("previewWants").style.width =
+      safe[1] + "%";
+
+    $("previewFuture").style.width =
+      safe[2] + "%";
 
     $("budgetPreviewText").replaceChildren(
       el("span", "Behov " + values[0] + " %"),
@@ -1115,18 +1511,30 @@ function updateBudgetForm(prefix) {
 }
 
 ["settings", "new"].forEach(prefix => {
-  $(prefix + "BudgetModel").onchange = () => updateBudgetForm(prefix);
-  ["Needs", "Wants", "Future"].forEach(suffix => {
-    $(prefix + suffix).oninput = () => updateBudgetForm(prefix);
-  });
+  $(prefix + "BudgetModel").onchange = () =>
+    updateBudgetForm(prefix);
+
+  ["Needs", "Wants", "Future"].forEach(
+    suffix => {
+      $(prefix + suffix).oninput = () =>
+        updateBudgetForm(prefix);
+    }
+  );
 });
 
+// ------------------------------------
 // Perioder och inställningar
+// ------------------------------------
 
 function navigate(direction) {
-  const index = data.periods.findIndex(p => p.id === selectedId);
+  const index = data.periods.findIndex(
+    p => p.id === selectedId
+  );
+
   const next = data.periods[index + direction];
+
   if (!next) return;
+
   selectedId = next.id;
   render();
 }
@@ -1135,22 +1543,30 @@ $("prevPeriod").onclick = () => navigate(-1);
 $("nextPeriod").onclick = () => navigate(1);
 
 for (let day = 1; day <= 31; day++) {
-  const option = el("option", "Den " + day + ":e");
+  const option = el(
+    "option",
+    "Den " + day + ":e"
+  );
+
   option.value = day;
   $("payday").append(option);
 }
 
 $("settingsBtn").onclick = () => {
   const p = currentPeriod();
+
   $("income").value = p.income;
   $("payday").value = data.payday;
   $("periodStart").value = p.start;
   $("periodEnd").value = p.end;
+
   setBudgetForm("settings", p.budget);
+
   $("settingsDialog").showModal();
 };
 
-$("closeSettings").onclick = () => $("settingsDialog").close();
+$("closeSettings").onclick = () =>
+  $("settingsDialog").close();
 
 $("saveSettings").onclick = () => {
   const income = Number($("income").value);
@@ -1159,6 +1575,7 @@ $("saveSettings").onclick = () => {
   const end = $("periodEnd").value;
 
   let budget;
+
   try {
     budget = readBudgetForm("settings");
   } catch (error) {
@@ -1180,16 +1597,19 @@ $("saveSettings").onclick = () => {
     return;
   }
 
-  if (data.periods.some(p =>
-    p.id !== selectedId &&
-    start <= p.end &&
-    end >= p.start
-  )) {
+  if (
+    data.periods.some(p =>
+      p.id !== selectedId &&
+      start <= p.end &&
+      end >= p.start
+    )
+  ) {
     alert("Löneperioderna får inte överlappa.");
     return;
   }
 
   const p = currentPeriod();
+
   const old = {
     income: p.income,
     start: p.start,
@@ -1203,7 +1623,10 @@ $("saveSettings").onclick = () => {
   p.end = end;
   p.budget = budget;
   data.payday = payday;
-  data.periods.sort((a, b) => a.start.localeCompare(b.start));
+
+  data.periods.sort(
+    (a, b) => a.start.localeCompare(b.start)
+  );
 
   try {
     save();
@@ -1214,8 +1637,13 @@ $("saveSettings").onclick = () => {
       end: old.end,
       budget: old.budget
     });
+
     data.payday = old.payday;
-    data.periods.sort((a, b) => a.start.localeCompare(b.start));
+
+    data.periods.sort(
+      (a, b) => a.start.localeCompare(b.start)
+    );
+
     return;
   }
 
@@ -1229,12 +1657,21 @@ $("deletePeriod").onclick = () => {
     return;
   }
 
-  if (!confirm("Ta bort hela perioden, inklusive kostnader och uttag?")) {
+  if (
+    !confirm(
+      "Ta bort hela perioden, inklusive kostnader och uttag?"
+    )
+  ) {
     return;
   }
 
-  data.periods = data.periods.filter(p => p.id !== selectedId);
-  selectedId = data.periods[data.periods.length - 1].id;
+  data.periods = data.periods.filter(
+    p => p.id !== selectedId
+  );
+
+  selectedId =
+    data.periods[data.periods.length - 1].id;
+
   save();
   $("settingsDialog").close();
   render();
@@ -1242,32 +1679,52 @@ $("deletePeriod").onclick = () => {
 
 function suggestNewEnd(start) {
   if (parseDate(start)) {
-    $("newEnd").value = addDays(nextPayday(start, data.payday), -1);
+    $("newEnd").value = addDays(
+      nextPayday(start, data.payday),
+      -1
+    );
   }
 }
 
 $("newPeriodBtn").onclick = () => {
   const source = currentPeriod();
 
-  $("newStart").value = addDays(source.end, 1);
+  $("newStart").value = addDays(
+    source.end,
+    1
+  );
+
   suggestNewEnd($("newStart").value);
 
   $("copyIncome").checked = true;
   $("copyList").replaceChildren();
+
   setBudgetForm("new", source.budget);
 
   source.expenses.forEach(item => {
-    const label = el("label", "", "check-row");
-    const checkbox = document.createElement("input");
+    const label = el(
+      "label",
+      "",
+      "check-row"
+    );
+
+    const checkbox = document.createElement(
+      "input"
+    );
 
     checkbox.type = "checkbox";
     checkbox.value = item.id;
+
     checkbox.checked =
-      item.type === "fast" || item.type === "lan";
+      item.type === "fast" ||
+      item.type === "lan";
 
     label.append(
       checkbox,
-      el("span", item.name + " – " + money(item.amount))
+      el(
+        "span",
+        item.name + " – " + money(item.amount)
+      )
     );
 
     $("copyList").append(label);
@@ -1276,14 +1733,18 @@ $("newPeriodBtn").onclick = () => {
   $("periodDialog").showModal();
 };
 
-$("newStart").onchange = () => suggestNewEnd($("newStart").value);
-$("cancelPeriod").onclick = () => $("periodDialog").close();
+$("newStart").onchange = () =>
+  suggestNewEnd($("newStart").value);
+
+$("cancelPeriod").onclick = () =>
+  $("periodDialog").close();
 
 $("confirmPeriod").onclick = () => {
   const start = $("newStart").value;
   const end = $("newEnd").value;
 
   let budget;
+
   try {
     budget = readBudgetForm("new");
   } catch (error) {
@@ -1291,19 +1752,32 @@ $("confirmPeriod").onclick = () => {
     return;
   }
 
-  if (!parseDate(start) || !parseDate(end) || end < start) {
+  if (
+    !parseDate(start) ||
+    !parseDate(end) ||
+    end < start
+  ) {
     alert("Kontrollera datumen.");
     return;
   }
 
-  if (data.periods.some(p => start <= p.end && end >= p.start)) {
-    alert("Den nya perioden överlappar en befintlig period.");
+  if (
+    data.periods.some(
+      p => start <= p.end && end >= p.start
+    )
+  ) {
+    alert(
+      "Den nya perioden överlappar en befintlig period."
+    );
     return;
   }
 
   const selected = new Set(
-    [...$("copyList").querySelectorAll('input:checked')]
-      .map(input => input.value)
+    [
+      ...$("copyList").querySelectorAll(
+        "input:checked"
+      )
+    ].map(input => input.value)
   );
 
   const source = currentPeriod();
@@ -1321,13 +1795,19 @@ $("confirmPeriod").onclick = () => {
   const next = makePeriod(
     start,
     end,
-    $("copyIncome").checked ? source.income : 0,
+    $("copyIncome").checked
+      ? source.income
+      : 0,
     copied,
     budget
   );
 
   data.periods.push(next);
-  data.periods.sort((a, b) => a.start.localeCompare(b.start));
+
+  data.periods.sort(
+    (a, b) => a.start.localeCompare(b.start)
+  );
+
   selectedId = next.id;
 
   save();
@@ -1335,7 +1815,9 @@ $("confirmPeriod").onclick = () => {
   render();
 };
 
+// ------------------------------------
 // Säkerhetskopiering
+// ------------------------------------
 
 $("exportBtn").onclick = () => {
   const blob = new Blob(
@@ -1347,34 +1829,55 @@ $("exportBtn").onclick = () => {
   const link = document.createElement("a");
 
   link.href = url;
-  link.download = "minbudget-" + today() + ".json";
+  link.download =
+    "minbudget-" + today() + ".json";
+
   document.body.append(link);
   link.click();
   link.remove();
 
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(
+    () => URL.revokeObjectURL(url),
+    1000
+  );
 };
 
 $("importFile").onchange = async event => {
   const file = event.target.files[0];
+
   if (!file) return;
 
   try {
-    const imported = validateData(JSON.parse(await file.text()));
+    const imported = validateData(
+      JSON.parse(await file.text())
+    );
 
     if (!imported.periods.length) {
       throw new Error("Tom säkerhetskopia");
     }
 
-    if (!confirm("Importen ersätter dina nuvarande uppgifter. Fortsätta?")) {
+    if (
+      !confirm(
+        "Importen ersätter dina nuvarande uppgifter. Fortsätta?"
+      )
+    ) {
       return;
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(imported));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(imported)
+    );
+
     data = imported;
-    selectedId = data.periods[data.periods.length - 1].id;
+
+    selectedId =
+      data.periods[data.periods.length - 1].id;
+
     $("settingsDialog").close();
+
     render();
+
     alert("Säkerhetskopian har återställts.");
   } catch (error) {
     console.error(error);
@@ -1384,29 +1887,46 @@ $("importFile").onchange = async event => {
   }
 };
 
+// ------------------------------------
 // Diagram
+// ------------------------------------
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 function svgNode(tag, attrs = {}) {
-  const node = document.createElementNS(SVG_NS, tag);
-  Object.entries(attrs).forEach(([key, value]) => {
-    node.setAttribute(key, String(value));
-  });
+  const node = document.createElementNS(
+    SVG_NS,
+    tag
+  );
+
+  Object.entries(attrs).forEach(
+    ([key, value]) => {
+      node.setAttribute(key, String(value));
+    }
+  );
+
   return node;
 }
 
 function dailyExpenses() {
   const p = currentPeriod();
-  const count = daysBetween(p.start, p.end) + 1;
 
-  const days = Array.from({ length: count }, (_, index) => ({
-    date: addDays(p.start, index),
-    amount: 0,
-    items: []
-  }));
+  const count =
+    daysBetween(p.start, p.end) + 1;
 
-  const byDate = new Map(days.map(day => [day.date, day]));
+  const days = Array.from(
+    { length: count },
+    (_, index) => ({
+      date: addDays(p.start, index),
+      amount: 0,
+      items: []
+    })
+  );
+
+  const byDate = new Map(
+    days.map(day => [day.date, day])
+  );
+
   const undated = [];
   const outside = [];
 
@@ -1429,7 +1949,11 @@ function dailyExpenses() {
     day.items.push(item);
   });
 
-  return { days, undated, outside };
+  return {
+    days,
+    undated,
+    outside
+  };
 }
 
 function drawChart(svg, days, large = false) {
@@ -1439,53 +1963,95 @@ function drawChart(svg, days, large = false) {
   const right = large ? 328 : 337;
   const top = large ? 15 : 5;
   const bottom = large ? 154 : 61;
+
   const width = right - left;
   const height = bottom - top;
 
-  const max = Math.max(0, ...days.map(d => d.amount));
+  const max = Math.max(
+    0,
+    ...days.map(day => day.amount)
+  );
 
-  for (let i = 0; i < (large ? 4 : 3); i++) {
+  for (
+    let i = 0;
+    i < (large ? 4 : 3);
+    i++
+  ) {
     const count = large ? 4 : 3;
-    const y = top + i / (count - 1) * height;
 
-    svg.append(svgNode("line", {
-      x1: left, y1: y, x2: right, y2: y,
-      stroke: "#405557",
-      "stroke-dasharray": "3 5"
-    }));
+    const y =
+      top +
+      i / (count - 1) * height;
+
+    svg.append(
+      svgNode("line", {
+        x1: left,
+        y1: y,
+        x2: right,
+        y2: y,
+        stroke: "#405557",
+        "stroke-dasharray": "3 5"
+      })
+    );
   }
 
   if (!days.length) return;
 
-  const points = days.map((day, index) => ({
-    x: days.length === 1
-      ? left + width / 2
-      : left + index / (days.length - 1) * width,
-    y: max > 0
-      ? bottom - day.amount / max * height
-      : bottom
-  }));
+  const points = days.map(
+    (day, index) => ({
+      x: days.length === 1
+        ? left + width / 2
+        : left +
+          index / (days.length - 1) * width,
+
+      y: max > 0
+        ? bottom -
+          day.amount / max * height
+        : bottom
+    })
+  );
 
   if (max === 0) {
-    svg.append(svgNode("line", {
-      x1: left, y1: bottom, x2: right, y2: bottom,
-      stroke: "#718783", "stroke-width": 2
-    }));
+    svg.append(
+      svgNode("line", {
+        x1: left,
+        y1: bottom,
+        x2: right,
+        y2: bottom,
+        stroke: "#718783",
+        "stroke-width": 2
+      })
+    );
+
     return;
   }
 
-  const path = points.map((p, i) =>
-    (i ? "L" : "M") + p.x.toFixed(2) + " " + p.y.toFixed(2)
+  const path = points.map(
+    (point, index) =>
+      (index ? "L" : "M") +
+      point.x.toFixed(2) +
+      " " +
+      point.y.toFixed(2)
   ).join(" ");
 
   svg.append(
     svgNode("path", {
-      d: path +
-        " L" + points[points.length - 1].x + " " + bottom +
-        " L" + points[0].x + " " + bottom + " Z",
+      d:
+        path +
+        " L" +
+        points[points.length - 1].x +
+        " " +
+        bottom +
+        " L" +
+        points[0].x +
+        " " +
+        bottom +
+        " Z",
+
       fill: "#e5a267",
       "fill-opacity": ".13"
     }),
+
     svgNode("path", {
       d: path,
       fill: "none",
@@ -1497,47 +2063,70 @@ function drawChart(svg, days, large = false) {
   );
 
   const candidates = days
-    .map((day, index) => ({ ...day, index }))
+    .map((day, index) => ({
+      ...day,
+      index
+    }))
     .filter(day => day.amount > 0);
 
   const visible = large
     ? candidates
-    : candidates.sort((a, b) => b.amount - a.amount).slice(0, 4);
+    : candidates
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 4);
 
   visible.forEach(day => {
     const point = points[day.index];
 
     if (!large) {
-      svg.append(svgNode("circle", {
-        cx: point.x, cy: point.y, r: 3.5,
-        fill: "#e5a267"
-      }));
+      svg.append(
+        svgNode("circle", {
+          cx: point.x,
+          cy: point.y,
+          r: 3.5,
+          fill: "#e5a267"
+        })
+      );
+
       return;
     }
 
     const group = svgNode("g", {
       role: "button",
       tabindex: "0",
-      "aria-label": longDate(day.date) + ", " + money(day.amount),
+      "aria-label":
+        longDate(day.date) +
+        ", " +
+        money(day.amount),
       style: "cursor:pointer"
     });
 
     group.append(
       svgNode("circle", {
-        cx: point.x, cy: point.y, r: 12,
+        cx: point.x,
+        cy: point.y,
+        r: 12,
         fill: "transparent"
       }),
+
       svgNode("circle", {
-        cx: point.x, cy: point.y, r: 4,
+        cx: point.x,
+        cy: point.y,
+        r: 4,
         fill: "#e5a267",
         stroke: "#263438",
         "stroke-width": 1.5
       })
     );
 
-    group.onclick = () => showChartDay(day);
+    group.onclick = () =>
+      showChartDay(day);
+
     group.onkeydown = event => {
-      if (event.key === "Enter" || event.key === " ") {
+      if (
+        event.key === "Enter" ||
+        event.key === " "
+      ) {
         event.preventDefault();
         showChartDay(day);
       }
@@ -1549,21 +2138,34 @@ function drawChart(svg, days, large = false) {
 
 function showChartDay(day) {
   const container = $("chartDetails");
+
   container.replaceChildren();
 
-  const heading = el("div", "", "chart-detail-heading");
+  const heading = el(
+    "div",
+    "",
+    "chart-detail-heading"
+  );
+
   heading.append(
     el("strong", longDate(day.date)),
     el("strong", money(day.amount))
   );
+
   container.append(heading);
 
   day.items.forEach(item => {
-    const row = el("div", "", "chart-detail-item");
+    const row = el(
+      "div",
+      "",
+      "chart-detail-item"
+    );
+
     row.append(
       el("span", item.name),
       el("span", money(item.amount))
     );
+
     container.append(row);
   });
 }
@@ -1572,40 +2174,73 @@ function renderMiniChart() {
   const p = currentPeriod();
   const chart = dailyExpenses();
 
-  $("miniStart").textContent = formatDate(p.start);
-  $("miniEnd").textContent = formatDate(p.end);
+  $("miniStart").textContent =
+    formatDate(p.start);
 
-  drawChart($("miniChart"), chart.days);
+  $("miniEnd").textContent =
+    formatDate(p.end);
+
+  drawChart(
+    $("miniChart"),
+    chart.days
+  );
 }
 
 function renderLargeChart() {
   const p = currentPeriod();
   const chart = dailyExpenses();
+
   const total = sum(chart.days);
-  const biggest = Math.max(0, ...chart.days.map(d => d.amount));
+
+  const biggest = Math.max(
+    0,
+    ...chart.days.map(day => day.amount)
+  );
 
   $("chartPeriod").textContent =
-    longDate(p.start) + " – " + longDate(p.end);
+    longDate(p.start) +
+    " – " +
+    longDate(p.end);
 
-  $("chartStart").textContent = formatDate(p.start);
-  $("chartEnd").textContent = formatDate(p.end);
-  $("chartTotal").textContent = money(total);
-  $("chartMax").textContent = money(biggest);
+  $("chartStart").textContent =
+    formatDate(p.start);
 
-  drawChart($("largeChart"), chart.days, true);
+  $("chartEnd").textContent =
+    formatDate(p.end);
 
-  const paidDays = chart.days.filter(day => day.amount > 0);
+  $("chartTotal").textContent =
+    money(total);
+
+  $("chartMax").textContent =
+    money(biggest);
+
+  drawChart(
+    $("largeChart"),
+    chart.days,
+    true
+  );
+
+  const paidDays = chart.days.filter(
+    day => day.amount > 0
+  );
+
   const details = $("chartDetails");
   details.replaceChildren();
 
   if (!paidDays.length) {
     details.append(
-      el("p", "Inga daterade betalningar ännu.", "empty")
+      el(
+        "p",
+        "Inga daterade betalningar ännu.",
+        "empty"
+      )
     );
   } else {
     const biggestDay = paidDays.reduce(
-      (a, b) => b.amount > a.amount ? b : a
+      (a, b) =>
+        b.amount > a.amount ? b : a
     );
+
     showChartDay(biggestDay);
   }
 
@@ -1613,7 +2248,8 @@ function renderLargeChart() {
 
   if (chart.undated.length) {
     notes.push(
-      chart.undated.length + " betalningar (" +
+      chart.undated.length +
+      " betalningar (" +
       money(sum(chart.undated)) +
       ") saknar datum och visas inte i diagrammet."
     );
@@ -1621,7 +2257,8 @@ function renderLargeChart() {
 
   if (chart.outside.length) {
     notes.push(
-      chart.outside.length + " betalningar (" +
+      chart.outside.length +
+      " betalningar (" +
       money(sum(chart.outside)) +
       ") ligger utanför perioden och visas inte i diagrammet."
     );
@@ -1629,7 +2266,11 @@ function renderLargeChart() {
 
   if (notes.length) {
     details.append(
-      el("div", notes.join(" "), "chart-no-date")
+      el(
+        "div",
+        notes.join(" "),
+        "chart-no-date"
+      )
     );
   }
 }
@@ -1639,13 +2280,54 @@ $("chartOpenBtn").onclick = () => {
   $("chartDialog").showModal();
 };
 
-$("closeChart").onclick = () => $("chartDialog").close();
-$("closeChartBottom").onclick = () => $("chartDialog").close();
+$("closeChart").onclick = () =>
+  $("chartDialog").close();
+
+$("closeChartBottom").onclick = () =>
+  $("chartDialog").close();
+
+// ------------------------------------
+// Rendering och datumuppdatering
+// ------------------------------------
 
 function render() {
   renderOverview();
   renderCategories();
   renderMiniChart();
 }
+
+// Dagsbeloppet uppdateras när sidan öppnas,
+// när användaren återvänder till fliken och
+// när datumet ändras medan appen är öppen.
+
+let lastRenderedDate = today();
+
+function refreshIfNewDay() {
+  const currentDate = today();
+
+  if (currentDate !== lastRenderedDate) {
+    lastRenderedDate = currentDate;
+    render();
+  }
+}
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+    if (!document.hidden) {
+      refreshIfNewDay();
+    }
+  }
+);
+
+window.addEventListener(
+  "focus",
+  refreshIfNewDay
+);
+
+setInterval(
+  refreshIfNewDay,
+  60000
+);
 
 render();
