@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17272b">
-  <title>MinBudget 4.8</title>
+  <title>MinBudget 4.9</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
@@ -40,9 +40,29 @@
         <strong id="afterBills">0 kr</strong>
       </div>
 
+      <div class="daily-budget">
+        <div class="daily-budget-top">
+          <span>☀️ Att leva på per dag</span>
+          <strong id="dailyAllowance">–</strong>
+        </div>
+        <p id="dailyAllowanceHint" class="hint">
+          Beräknas utifrån kvarvarande pengar och dagar till nästa lön.
+        </p>
+      </div>
+
       <div class="payment-summary">
-        <div><span>Redan betalt</span><strong id="paidTotal">0 kr</strong></div>
-        <div><span>Kvar att betala</span><strong id="unpaidTotal">0 kr</strong></div>
+        <div>
+          <span>Redan betalt (utan sparande)</span>
+          <strong id="paidTotal">0 kr</strong>
+        </div>
+        <div>
+          <span>Kvar att betala (utan sparande)</span>
+          <strong id="unpaidTotal">0 kr</strong>
+        </div>
+        <div>
+          <span>Sparat netto</span>
+          <strong id="savedTotal">0 kr</strong>
+        </div>
         <div id="withdrawalSummary" class="hidden">
           <span>Tagit från sparandet</span>
           <strong id="withdrawalTotal">0 kr</strong>
@@ -74,7 +94,7 @@
     <button id="withdrawBtn" class="secondary-btn">− Ta från sparandet</button>
     <button id="newPeriodBtn" class="secondary-btn">+ Ny löneperiod</button>
 
-    <footer>MinBudget 4.8 💚</footer>
+    <footer>MinBudget 4.9 💚</footer>
   </main>
 
   <dialog id="expenseDialog">
@@ -165,9 +185,18 @@
       <div id="settingsCustomBudget" class="custom-budget hidden">
         <p class="hint">Summan ska bli 100 %.</p>
         <div class="custom-budget-grid">
-          <div><label for="settingsNeeds">Behov %</label><input id="settingsNeeds" type="number" min="0" max="100" step="1"></div>
-          <div><label for="settingsWants">Tänk efter %</label><input id="settingsWants" type="number" min="0" max="100" step="1"></div>
-          <div><label for="settingsFuture">Framtid %</label><input id="settingsFuture" type="number" min="0" max="100" step="1"></div>
+          <div>
+            <label for="settingsNeeds">Behov %</label>
+            <input id="settingsNeeds" type="number" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label for="settingsWants">Tänk efter %</label>
+            <input id="settingsWants" type="number" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label for="settingsFuture">Framtid %</label>
+            <input id="settingsFuture" type="number" min="0" max="100" step="1">
+          </div>
         </div>
         <p id="settingsBudgetSum" class="budget-sum"></p>
       </div>
@@ -202,9 +231,18 @@
       <div id="newCustomBudget" class="custom-budget hidden">
         <p class="hint">Summan ska bli 100 %.</p>
         <div class="custom-budget-grid">
-          <div><label for="newNeeds">Behov %</label><input id="newNeeds" type="number" min="0" max="100" step="1"></div>
-          <div><label for="newWants">Tänk efter %</label><input id="newWants" type="number" min="0" max="100" step="1"></div>
-          <div><label for="newFuture">Framtid %</label><input id="newFuture" type="number" min="0" max="100" step="1"></div>
+          <div>
+            <label for="newNeeds">Behov %</label>
+            <input id="newNeeds" type="number" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label for="newWants">Tänk efter %</label>
+            <input id="newWants" type="number" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label for="newFuture">Framtid %</label>
+            <input id="newFuture" type="number" min="0" max="100" step="1">
+          </div>
         </div>
         <p id="newBudgetSum" class="budget-sum"></p>
       </div>
@@ -242,8 +280,14 @@
       <p id="chartPeriod" class="hint"></p>
 
       <div class="chart-stats">
-        <div><small>Betalningar i perioden</small><strong id="chartTotal">0 kr</strong></div>
-        <div><small>Största dagen</small><strong id="chartMax">0 kr</strong></div>
+        <div>
+          <small>Betalningar i perioden</small>
+          <strong id="chartTotal">0 kr</strong>
+        </div>
+        <div>
+          <small>Största dagen</small>
+          <strong id="chartMax">0 kr</strong>
+        </div>
       </div>
 
       <div class="chart-large-wrap">
