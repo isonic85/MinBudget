@@ -1,4 +1,3 @@
-
 "use strict";
 
 const STORAGE_KEY = "minbudget_v4";
