@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -50,6 +51,7 @@
       </div>
 
       <div class="payment-summary">
+        <div><span>Extra inkomster (försäljning m.m.)</span><strong id="extraIncomeTotal">0 kr</strong></div>
         <div>
           <span>Redan betalt (utan sparande)</span>
           <strong id="paidTotal">0 kr</strong>
@@ -90,6 +92,8 @@
     </section>
 
     <button id="addBtn" class="primary-btn">+ Lägg till kostnad</button>
+    <button id="saleBtn" class="secondary-btn">+ Lägg till pengar (försäljning)</button>
+    <section class="card"><div class="section-heading"><h2>Extra inkomster</h2></div><div id="saleList"></div></section>
     <button id="withdrawBtn" class="secondary-btn">− Ta från sparandet</button>
     <button id="newPeriodBtn" class="secondary-btn">+ Ny löneperiod</button>
 
@@ -137,6 +141,21 @@
       <button class="primary-btn" type="submit">Spara</button>
       <button id="cancelExpense" class="secondary-btn" type="button">Avbryt</button>
       <button id="deleteExpense" class="danger-btn hidden" type="button">Ta bort posten</button>
+    </form>
+  </dialog>
+
+  <dialog id="saleDialog">
+    <form id="saleForm" class="dialog-body">
+      <h2 id="saleTitle">Lägg till pengar</h2>
+      <label for="saleName">Vad sålde du?</label>
+      <input id="saleName" required placeholder="T.ex. Cykel, möbler eller kläder">
+      <label for="saleAmount">Belopp (kr)</label>
+      <input id="saleAmount" type="number" min="0.01" step="0.01" required>
+      <label for="saleDate">Datum</label>
+      <input id="saleDate" type="date" required>
+      <button class="primary-btn" type="submit">Spara inkomst</button>
+      <button id="cancelSale" class="secondary-btn" type="button">Avbryt</button>
+      <button id="deleteSale" class="danger-btn hidden" type="button">Ta bort inkomsten</button>
     </form>
   </dialog>
 
